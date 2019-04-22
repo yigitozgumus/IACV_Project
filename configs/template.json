@@ -1,0 +1,52 @@
+{
+  "exp": {},
+  "model": {
+    "name": "gan.GAN"
+  },
+  "dirs": {
+    "data": "data",
+    "data_normal": "data/Normal/",
+    "data_anomalous": "data/Anomalous/"
+  },
+  "data_loader": {
+    "name": "data_generator.DataGenerator",
+    "buffer_size": 51200,
+    "image_size": 32,
+    "batch_size": 32,
+    "num_epochs": 1000,
+    "num_iter_per_epoch": 1600,
+    "num_parallel_calls": 8,
+    "test_batch": 36
+  },
+  "trainer": {
+    "name": "gan_trainer.GANTrainer",
+    "noise_dim": 100,
+    "image_dims": [32, 32, 1],
+    "include_noise": true,
+    "soft_labels": true,
+    "flip_labels": false,
+    "discriminator_l_rate": 0.00005,
+    "noise_probability": 0.05,
+    "generator_l_rate": 0.0002,
+    "optimizer_adam_beta1": 0.5,
+    "optimizer_adam_beta2": 0.999,
+    "batch_momentum": 0.8,
+    "leakyReLU_alpha": 0.2,
+    "dropout_rate": 0.3,
+    "ema_decay": 0.999,
+    "spectral_norm": false,
+    "allow_zz": true,
+    "enable_early_stop": true,
+    "loss_method": "fm",
+    "degree": 1
+  },
+  "log": {
+    "name": "summarizer.Summarizer",
+    "enable_summary": true,
+    "show_steps": 1,
+    "max_to_keep": 2,
+    "num_example_imgs_to_generate": 25,
+    "frequency_test": 5,
+    "output_folder": "Experiments"
+  }
+}
