@@ -74,6 +74,7 @@ class Denoising(BaseModel):
 
         self.summary_op_im = tf.summary.merge_all("image")
         self.summary_op_loss = tf.summary.merge_all("loss")
+        self.summary_all = tf.summary.merge([self.summary_op_im, self.summary_op_loss])
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
