@@ -27,11 +27,14 @@ class Denoising(BaseModel):
             )(self.image_input)
             net = tf.nn.relu(features=net)
             # 1 Convolution of the image
-            net_1 = tf.layers.Conv2D(
+            net_input = tf.layers.Conv2D(
                 filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
             )(self.image_input)
+            net_layer_1 = tf.layers.Conv2D(
+                filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
+            )(net)
             # Add to the image
-            self.output += net_1
+            self.output += net_input + net_layer_1
 
             for i in range(19):
                 net = tf.layers.Conv2D(
