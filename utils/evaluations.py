@@ -66,6 +66,8 @@ def do_roc(scores, true_labels, file_name="", directory="", plot=True):
             roc_auc (float): area under the under the ROC curve
             thresholds (list): list of thresholds for the ROC
     """
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     fpr, tpr, _ = roc_curve(true_labels, scores)
     roc_auc = auc(fpr, tpr)  # compute area under the curve
     if plot:
@@ -224,7 +226,17 @@ def save_grid_plot(samples, samples_rec, name_model, dataset, nb_images=50, grid
 
 
 def save_results(
-    location, scores, true_labels, model, dataset, method, weight, label, random_seed, step=-1
+    location,
+    scores,
+    true_labels,
+    model,
+    dataset,
+    method,
+    weight,
+    label,
+    random_seed,
+    logger,
+    step=-1,
 ):
     directory = location + "{}/{}/{}/w{}/".format(model, dataset, method, weight)
     if not os.path.exists(directory):
@@ -250,7 +262,7 @@ def save_results(
         true_labels.astype(int), y_pred.astype(int), average="binary"
     )
 
-    print("Testing at step %i, method %s: AUROC = %.4f" % (step, method, roc_auc))
+    logger.info("Testing at step %i, method %s: AUROC = %.4f" % (step, method, roc_auc))
 
     results = [
         model,
