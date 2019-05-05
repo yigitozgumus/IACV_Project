@@ -34,7 +34,7 @@ class Denoising(BaseModel):
                 filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
             )(net)
             # Add to the image
-            self.output += net_input + net_layer_1
+            self.output =( net_input + net_layer_1)
 
             for i in range(19):
                 net = tf.layers.Conv2D(

@@ -10,13 +10,16 @@
     },
     "data_loader": {
         "name": "data_generator.DataGenerator",
+        "random_seed" :42,
         "buffer_size": 51200,
         "image_size": 32,
         "batch_size": 32,
         "num_epochs": 1000,
         "num_iter_per_epoch": 1600,
         "num_parallel_calls": 8,
-        "test_batch": 36
+        "test_batch": 36,
+        "validation": false,
+        "mode":"anomaly"
     },
     "trainer": {
         "name": "denoising_trainer.DenoisingTrainer",
@@ -25,7 +28,7 @@
         "include_noise": true,
         "l_rate": 1e-4,
         "optimizer_adam_beta1": 0.5,
-        "optimizer_adam_beta2": 0.999,
+        "optimizer_adam_beta2": 0.999
     },
     "log": {
         "name": "summarizer.Summarizer",
