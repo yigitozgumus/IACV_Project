@@ -23,26 +23,26 @@ class Denoising(BaseModel):
 
             # First Convolution + ReLU layer
             net = tf.layers.Conv2D(
-                filters=63, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
+                filters=63, kernel_size=3, strides=1, kernel_initializer=self.init_kernel,padding='same',
             )(self.image_input)
             net = tf.nn.relu(features=net)
             # 1 Convolution of the image
             net_input = tf.layers.Conv2D(
-                filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
+                filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel,padding='same',
             )(self.image_input)
             net_layer_1 = tf.layers.Conv2D(
-                filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
+                filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel,padding='same',
             )(net)
             # Add to the image
             self.output =( net_input + net_layer_1)
 
             for i in range(19):
                 net = tf.layers.Conv2D(
-                    filters=63, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
+                    filters=63, kernel_size=3, strides=1, kernel_initializer=self.init_kernel,padding='same',
                 )(net)
                 net = tf.nn.relu(features=net)
                 net_1 = tf.layers.Conv2D(
-                    filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel
+                    filters=1, kernel_size=3, strides=1, kernel_initializer=self.init_kernel,padding='same',
                 )(net)
                 self.output += net_1
             self.output += self.image_input
@@ -54,7 +54,7 @@ class Denoising(BaseModel):
         # Optimizer
         with tf.name_scope("Optimizer"):
             self.optimizer = tf.train.AdamOptimizer(
-                self.config.trainerl_rate,
+                self.config.trainer.l_rate,
                 beta1=self.config.trainer.optimizer_adam_beta1,
                 beta2=self.config.trainer.optimizer_adam_beta2,
             )
@@ -66,7 +66,7 @@ class Denoising(BaseModel):
                 self.optimizer.minimize(
                     self.loss, var_list=all_variables, global_step=self.global_step_tensor
                 )
-
+                
         # Summary
         with tf.name_scope("Summary"):
             with tf.name_scope("Loss"):
@@ -81,5 +81,5 @@ class Denoising(BaseModel):
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
-        self.saver = tf.train.Saver(max_to_keep=self.config.max_to_keep)
+        self.saver = tf.train.Saver(max_to_keep=self.config.log.max_to_keep)
 

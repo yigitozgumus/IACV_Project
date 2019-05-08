@@ -15,7 +15,6 @@ def get_config_from_json(json_file):
 
     # convert the dictionary to a namespace using Namespace
     config = DotMap(config_dict)
-
     return config, config_dict
 
 
@@ -36,6 +35,7 @@ def create_parameter_file(config: object) -> None:
 
 
 def process_config(json_file: str, exp_name: str) -> object:
+
     config, _ = get_config_from_json(json_file)
     config.exp.name = exp_name
     config.log.summary_dir = os.path.join(config.log.output_folder, config.exp.name, "summary/")
