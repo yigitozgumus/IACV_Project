@@ -105,3 +105,11 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+# data
+data/
+data/*
+
+# Experiments
+Experiments/
+Experiments/*
