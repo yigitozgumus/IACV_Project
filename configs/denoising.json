@@ -1,5 +1,5 @@
 {
-    "exp": {},
+    "exp":{},
     "model": {
         "name": "denoising.Denoising"
     },
@@ -34,6 +34,7 @@
         "name": "summarizer.Summarizer",
         "enable_summary": true,
         "max_to_keep": 2,
+        "num_example_imgs_to_generate": 25,
         "output_folder": "Experiments"
     }
 }
