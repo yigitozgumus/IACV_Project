@@ -4,13 +4,11 @@ from utils.config import process_config
 from utils.factory import create
 from utils.dirs import create_dirs
 from utils.logger import Logger
-
+from utils.copy_codebase import copy_codebase
 import os
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def run():
@@ -24,8 +22,13 @@ def run():
             config.log.checkpoint_dir,
             config.log.step_generation_dir,
             config.log.log_file_dir,
+            config.log.codebase_dir,
         ]
     )
+
+    # Copy the model code and the trainer code to the experiment folder
+    copy_codebase(config)
+
     l = Logger(config)
     logger = l.get_logger(__name__)
     # Create the tensorflow session
@@ -37,13 +40,11 @@ def run():
     # Create the summarizer Object
     summarizer = create("utils." + config.log.name)(sess, config)
     # Create the trainer
-    trainer = create("trainers." + config.trainer.name)(
-        sess, model, data, config, summarizer
-    )
+    trainer = create("trainers." + config.trainer.name)(sess, model, data, config, summarizer)
     # Load model if exists
     model.load(sess)
     # Train the model
-    trainer.train()
+    # trainer.train()
     # Test the model
     if config.trainer.test_at_end:
         trainer.test()
@@ -52,3 +53,4 @@ def run():
 
 if __name__ == "__main__":
     run()
+

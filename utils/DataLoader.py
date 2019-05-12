@@ -90,7 +90,8 @@ class DataLoader:
             self.logger.info("Train and Validation datasets are already populated")
         else:
             # Remove train dataset from the previous run
-            rmtree(self.train_dataset)
+            if os.path.exists(self.train_dataset):
+                rmtree(self.train_dataset)
             self.logger.info("Train and Validations Datasets will be populated")
             size = self.config.data_loader.image_size
             num_images = 10240
@@ -138,16 +139,18 @@ class DataLoader:
             tag_files = []
             for img_, tag_ in self.image_tag_list:
                 h, w = img_.shape[:2]
-                self.w_turns = w // size
-                self.h_turns = h // size
-
+                self.w_turns = (w // size) * 2 - 1
+                self.h_turns = (h // size) * 2 - 1
+                slide = int(size / 2)
                 for adv_h in range(self.h_turns):
                     for adv_w in range(self.w_turns):
                         image = img_[
-                            adv_h * size : (adv_h + 1) * size, adv_w * size : (adv_w + 1) * size
+                            adv_h * slide : size + ((adv_h) * slide),
+                            adv_w * slide : ((adv_w) * slide) + size,
                         ]
                         tag = tag_[
-                            adv_h * size : (adv_h + 1) * size, adv_w * size : (adv_w + 1) * size
+                            adv_h * slide : size + ((adv_h) * slide),
+                            adv_w * slide : ((adv_w) * slide) + size,
                         ]
                         img_files.append(image)
                         tag_files.append(tag)
@@ -219,7 +222,7 @@ class DataLoader:
         labels = []
         for label in tag_list_merged:
             im2arr = io.imread(label)
-            labels.append(1) if np.sum(im2arr) else labels.append(0)
+            labels.append(1) if np.sum(im2arr) > 5100 else labels.append(0)
         labels_f = tf.constant(labels)
 
         return [img_names, labels_f]

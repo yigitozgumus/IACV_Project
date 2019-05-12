@@ -35,6 +35,7 @@ class BaseModel:
             self.increment_cur_epoch_tensor = tf.assign(
                 self.cur_epoch_tensor, self.cur_epoch_tensor + 1
             )
+            self.reset_cur_epoch_tensor = tf.assign(self.cur_epoch_tensor, 0)
 
     # just initialize a tensorflow variable to use it as global step counter
     def init_global_step(self):

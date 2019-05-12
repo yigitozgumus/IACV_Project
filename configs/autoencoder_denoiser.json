@@ -1,0 +1,55 @@
+{
+    "exp":{},
+    "model": {
+        "name": "autoencoder_denoiser.AutoencoderDenoiser"
+    },
+    "dirs": {
+        "data": "data",
+        "data_normal": "data/Normal/",
+        "data_anomalous": "data/Anomalous/"
+    },
+    "data_loader": {
+        "name": "data_generator.DataGenerator",
+        "random_seed" :42,
+        "buffer_size": 51200,
+        "image_size": 28,
+        "batch_size": 32,
+        "num_epochs_ae": 25,
+        "num_epochs_den": 50,
+        "num_iter_per_epoch": 1600,
+        "num_parallel_calls": 8,
+       "num_iter_per_test": 2870,
+        "test_batch": 36,
+        "validation": false,
+       "dataset_name": "material",
+        "mode":"anomaly"
+    },
+    "trainer": {
+        "name": "autoencoder_denoiser_trainer.AutoencoderDenoiserTrainer",
+        "noise_dim": 100,
+        "image_dims": [28, 28, 1],
+        "include_noise": true,
+         "batch_momentum": 0.8,
+        "batch_epsilon": 1e-5,
+        "leakyReLU_alpha": 0.2,
+        "l_rate": 1e-4,
+        "ema_decay": 0.999,
+        "optimizer_adam_beta1": 0.5,
+        "optimizer_adam_beta2": 0.999,
+        "enc_norm_degree": 2,
+        "den_norm_degree": 2,
+        "label": 0,
+        "frequency_eval": 2,
+        "patience": 10,
+        "test_at_end": true,
+        "percentiles": [80, 85, 90, 95, 96, 97, 98, 99, 99.1, 99.2, 99.3, 99.4, 99.5, 99.6, 99.7, 99.8, 99.9]
+    },
+    "log": {
+        "name": "summarizer.Summarizer",
+        "enable_summary": true,
+        "max_to_keep": 2,
+        "num_example_imgs_to_generate": 25,
+         "frequency_test": 5,
+        "output_folder": "Experiments"
+    }
+}
