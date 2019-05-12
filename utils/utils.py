@@ -20,7 +20,15 @@ def get_config_from_json(json_file):
 
     return config, config_dict
 
+def get_getter(
+    ema
+):  # to update neural net with moving avg variables, suitable for ss learning cf Saliman
+    def ema_getter(getter, name, *args, **kwargs):
+        var = getter(name, *args, **kwargs)
+        ema_var = ema.average(var)
+        return ema_var if ema_var else var
 
+    return ema_getter
 
 # function for changing directory
 @contextmanager
