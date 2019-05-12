@@ -28,7 +28,7 @@ class BaseTrainMulti:
         self.logger.info("Training of Autoencoder is started")
         for cur_epoch in range(
             self.model.cur_epoch_tensor.eval(self.sess),
-            self.config.data_loader.num_epochs + 1,
+            self.config.data_loader.num_epochs_ae + 1,
             1,
         ):
             self.train_epoch_ae()
@@ -39,7 +39,7 @@ class BaseTrainMulti:
         self.logger.info("Training of Denoiser is started")
         for cur_epoch in range(
                 self.model.cur_epoch_tensor.eval(self.sess),
-                self.config.data_loader.num_epochs + 1,
+                self.config.data_loader.num_epochs_den + 1,
                 1,
         ):
             self.train_epoch_den()
@@ -76,6 +76,13 @@ class BaseTrainMulti:
         - run the tensorflow session
         - return any metrics you need to summarize
         """
+        raise NotImplementedError
+
+    def test(self):
+        self.logger.info("Testing is started")
+        self.test_epoch()
+
+    def test_epoch(self):
         raise NotImplementedError
 
     def save_generated_images(self, predictions, epoch):

@@ -123,17 +123,22 @@ class Denoising(BaseModel):
         # Summary
         with tf.name_scope("Summary"):
             with tf.name_scope("autoencoder_loss"):
-                tf.summary.scalar("loss_auto", self.auto_loss, ["loss"])
+                tf.summary.scalar("loss_auto", self.auto_loss, ["loss_ae"])
             with tf.name_scope("denoiser_loss"):
-                tf.summary.scalar("loss_den", self.den_loss, ["loss"])
+                tf.summary.scalar("loss_den", self.den_loss, ["loss_den"])
             with tf.name_scope("Image"):
                 tf.summary.image("Input_Image", self.image_input, 3, ["image"])
                 tf.summary.image("rec_image",self.rec_image,3, ["image"])
-                tf.summary.image("Output_Image", self.output, 3, ["image"])
+                tf.summary.image("rec_image", self.rec_image, 3, ["image_2"])
+                tf.summary.image("Output_Image", self.output, 3, ["image_2"])
 
-        self.summary_op_im = tf.summary.merge_all("image")
-        self.summary_op_loss = tf.summary.merge_all("loss")
-        self.summary_all = tf.summary.merge([self.summary_op_im, self.summary_op_loss])
+        self.summary_op_ae = tf.summary.merge_all("image")
+        self.summary_op_den = tf.summary.mergel_all("image_2")
+        self.summary_op_loss_ae = tf.summary.merge_all("loss_ae")
+        self.summary_op_loss_den = tf.summary.merge_all("loss_den")
+        self.summary_all_ae = tf.summary.merge([self.summary_op_ae, self.summary_op_loss_ae])
+        self.summary_all_den = tf.summary.merge([self.summary_op_den, self.summary_op_loss_den])
+        #self.summary_all = tf.summary.merge([self.summary_op_im, self.summary_op_loss])
 
     def autoencoder(self, image_input, getter=None):
         # This generator will take the image from the input dataset, and first it will

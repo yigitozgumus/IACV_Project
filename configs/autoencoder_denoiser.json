@@ -14,11 +14,14 @@
         "buffer_size": 51200,
         "image_size": 32,
         "batch_size": 32,
-        "num_epochs": 1000,
+        "num_epochs_ae": 250,
+        "num_epochs_den": 500,
         "num_iter_per_epoch": 1600,
         "num_parallel_calls": 8,
+       "num_iter_per_test": 3337,
         "test_batch": 36,
         "validation": false,
+       "dataset_name": "material",
         "mode":"anomaly"
     },
     "trainer": {
@@ -26,12 +29,20 @@
         "noise_dim": 100,
         "image_dims": [32, 32, 1],
         "include_noise": true,
+         "batch_momentum": 0.8,
+        "batch_epsilon": 1e-5,
+        "leakyReLU_alpha": 0.2,
         "l_rate": 1e-4,
         "ema_decay": 0.999,
         "optimizer_adam_beta1": 0.5,
         "optimizer_adam_beta2": 0.999,
         "enc_norm_degree": 2,
-        "den_norm_degree": 2
+        "den_norm_degree": 2,
+        "label": 0,
+        "frequency_eval": 2,
+        "patience": 10,
+        "test_at_end": true,
+        "percentiles": [80, 85, 90, 95, 96, 97, 98, 99, 99.1, 99.2, 99.3, 99.4, 99.5, 99.6, 99.7, 99.8, 99.9]
     },
     "log": {
         "name": "summarizer.Summarizer",
