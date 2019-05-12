@@ -53,6 +53,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
                 cur_epoch, time() - begin, ae_m
             )
         )
+        self.model.save(self.sess)
 
     def train_epoch_den(self):
         # Attach the epoch loop to a variable
@@ -84,6 +85,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
                 cur_epoch, time() - begin, den_m
             )
         )
+        self.model.save(self.sess)
 
     def train_step_ae(self, image, cur_epoch):
         image_eval = self.sess.run(image)
@@ -103,7 +105,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
-            self.model.is_training_ae: True,
+            self.model.is_training_ae: False,
         }
         # Train Denoiser
         _, lden, sm_den = self.sess.run(
@@ -147,7 +149,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             true_labels,
             self.config.model.name,
             self.config.data_loader.dataset_name,
-            "fm",
+            "scores_rec",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,
@@ -161,7 +163,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             true_labels,
             self.config.model.name,
             self.config.data_loader.dataset_name,
-            "fm",
+            "scores_den",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,
@@ -175,7 +177,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             true_labels,
             self.config.model.name,
             self.config.data_loader.dataset_name,
-            "fm",
+            "scores_pipe",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,
