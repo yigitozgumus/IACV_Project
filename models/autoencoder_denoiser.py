@@ -2,9 +2,9 @@ from base.base_model import BaseModel
 import tensorflow as tf
 from utils.utils import get_getter
 
-class Denoising(BaseModel):
+class AutoencoderDenoiser(BaseModel):
     def __init__(self, config):
-        super(Denoising, self).__init__(config)
+        super(AutoencoderDenoiser, self).__init__(config)
 
         self.build_model()
         self.init_saver()
@@ -23,7 +23,7 @@ class Denoising(BaseModel):
         # Encoder Decoder Part first
         self.logger.info("Building Training Graph")
         with tf.variable_scope("Autoencoder_Denoiser"):
-            self.rec_image = self.autoencoder(self.image_input)
+            self.noise_gen, self.rec_image = self.autoencoder(self.image_input)
             self.output, self.mask = self.denoiser(self.rec_image)
 
         # Loss Function
@@ -78,14 +78,14 @@ class Denoising(BaseModel):
                 tf.GraphKeys.UPDATE_OPS, scope="Autoencoder_Denoiser/Denoiser"
             )
             with tf.control_dependencies(self.auto_update_ops):
-                self.optimizer.minimize(
+               self.auto_op = self.optimizer.minimize(
                     self.auto_loss,
                     var_list=self.autoencoder_vars,
                     global_step=self.global_step_tensor,
                 )
 
             with tf.control_dependencies(self.den_update_ops):
-                self.optimizer.minimize(self.den_loss, var_list=self.denoiser_vars)
+                self.den_op = self.optimizer.minimize(self.den_loss, var_list=self.denoiser_vars)
 
             # Exponential Moving Average for Estimation
             self.auto_ema = tf.train.ExponentialMovingAverage(decay=self.config.trainer.ema_decay)
@@ -94,16 +94,16 @@ class Denoising(BaseModel):
             self.den_ema = tf.train.ExponentialMovingAverage(decay=self.config.trainer.ema_decay)
             maintain_averages_op_den = self.den_ema.apply(self.denoiser_vars)
 
-            with tf.control_dependencies([self.disc_op]):
+            with tf.control_dependencies([self.auto_op]):
                 self.train_auto_op = tf.group(maintain_averages_op_auto)
 
-            with tf.control_dependencies([self.gen_op]):
-                self.train_enc_op = tf.group(maintain_averages_op_den)
+            with tf.control_dependencies([self.den_op]):
+                self.train_den_op = tf.group(maintain_averages_op_den)
 
         self.logger.info("Building Testing Graph...")
         with tf.variable_scope("Autoencoder_Denoiser"):
-            self.rec_image_ema = self.autoencoder(self.image_input,getter=get_getter(self.gen_ema))
-            self.output_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.gen_ema))
+            self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input,getter=get_getter(self.auto_ema))
+            self.output_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
 
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):
@@ -133,7 +133,7 @@ class Denoising(BaseModel):
                 tf.summary.image("Output_Image", self.output, 3, ["image_2"])
 
         self.summary_op_ae = tf.summary.merge_all("image")
-        self.summary_op_den = tf.summary.mergel_all("image_2")
+        self.summary_op_den = tf.summary.merge_all("image_2")
         self.summary_op_loss_ae = tf.summary.merge_all("loss_ae")
         self.summary_op_loss_den = tf.summary.merge_all("loss_den")
         self.summary_all_ae = tf.summary.merge([self.summary_op_ae, self.summary_op_loss_ae])
@@ -323,7 +323,7 @@ class Denoising(BaseModel):
 
     def denoiser(self, image_input, getter=None):
         # Full Model Scope
-        with tf.variable_scope("Denoiser", reuse=tf.AUTO_REUSE, getter=getter):
+        with tf.variable_scope("Denoiser", reuse=tf.AUTO_REUSE, custom_getter=getter):
             # First Convolution + ReLU layer
             net = tf.layers.Conv2D(
                 filters=63,

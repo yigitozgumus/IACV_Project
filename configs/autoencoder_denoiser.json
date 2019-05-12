@@ -1,7 +1,7 @@
 {
     "exp":{},
     "model": {
-        "name": "denoising.Denoising"
+        "name": "autoencoder_denoiser.AutoencoderDenoiser"
     },
     "dirs": {
         "data": "data",
@@ -12,22 +12,22 @@
         "name": "data_generator.DataGenerator",
         "random_seed" :42,
         "buffer_size": 51200,
-        "image_size": 32,
+        "image_size": 28,
         "batch_size": 32,
-        "num_epochs_ae": 250,
-        "num_epochs_den": 500,
+        "num_epochs_ae": 25,
+        "num_epochs_den": 50,
         "num_iter_per_epoch": 1600,
         "num_parallel_calls": 8,
-       "num_iter_per_test": 3337,
+       "num_iter_per_test": 2870,
         "test_batch": 36,
         "validation": false,
        "dataset_name": "material",
         "mode":"anomaly"
     },
     "trainer": {
-        "name": "denoising_trainer.DenoisingTrainer",
+        "name": "autoencoder_denoiser_trainer.AutoencoderDenoiserTrainer",
         "noise_dim": 100,
-        "image_dims": [32, 32, 1],
+        "image_dims": [28, 28, 1],
         "include_noise": true,
          "batch_momentum": 0.8,
         "batch_epsilon": 1e-5,
@@ -49,6 +49,7 @@
         "enable_summary": true,
         "max_to_keep": 2,
         "num_example_imgs_to_generate": 25,
+         "frequency_test": 5,
         "output_folder": "Experiments"
     }
 }

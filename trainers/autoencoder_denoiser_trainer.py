@@ -45,7 +45,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
             feed_dict = {self.model.image_input: image_eval, self.model.is_training: False}
-            reconstruction = self.sess.run(self.model.sumary_op_ae, feed_dict=feed_dict)
+            reconstruction = self.sess.run(self.model.summary_op_ae, feed_dict=feed_dict)
             self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
         ae_m = np.mean(ae_losses)
         self.logger.info(
@@ -76,7 +76,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
             feed_dict = {self.model.image_input: image_eval, self.model.is_training: False}
-            reconstruction = self.sess.run(self.model.sumary_op_den, feed_dict=feed_dict)
+            reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
             self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
         den_m = np.mean(den_losses)
         self.logger.info(
