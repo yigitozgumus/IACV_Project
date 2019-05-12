@@ -44,7 +44,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training: False}
+            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_ae, feed_dict=feed_dict)
             self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
         ae_m = np.mean(ae_losses)
@@ -75,7 +75,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training: False}
+            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
             self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
         den_m = np.mean(den_losses)
@@ -89,7 +89,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
-            self.model.is_training: True,
+            self.model.is_training_ae: True,
         }
         # Train Autoencoder
         _, lae, sm_ae = self.sess.run(
@@ -103,7 +103,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
-            self.model.is_training: True,
+            self.model.is_training_ae: True,
         }
         # Train Denoiser
         _, lden, sm_den = self.sess.run(
@@ -126,7 +126,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             test_batch, test_labels = self.sess.run([self.data.test_image, self.data.test_label])
             test_loop.refresh()  # to show immediately the update
             sleep(0.01)
-            feed_dict = {self.model.image_input: test_batch, self.model.is_training: False}
+            feed_dict = {self.model.image_input: test_batch, self.model.is_training_ae: False}
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()

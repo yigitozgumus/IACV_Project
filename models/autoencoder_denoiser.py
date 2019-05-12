@@ -11,7 +11,8 @@ class AutoencoderDenoiser(BaseModel):
 
     def build_model(self):
         # Placeholders
-        self.is_training = tf.placeholder(tf.bool)
+        self.is_training_ae = tf.placeholder(tf.bool)
+        #self.is_training_den = tf.placeholder(tf.bool)
         self.image_input = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
@@ -187,7 +188,7 @@ class AutoencoderDenoiser(BaseModel):
                         x_e,
                         momentum=self.config.trainer.batch_momentum,
                         epsilon=self.config.trainer.batch_epsilon,
-                        training=self.is_training,
+                        training=self.is_training_ae,
                     )
                     x_e = tf.nn.leaky_relu(
                         features=x_e,
@@ -209,7 +210,7 @@ class AutoencoderDenoiser(BaseModel):
                         x_e,
                         momentum=self.config.trainer.batch_momentum,
                         epsilon=self.config.trainer.batch_epsilon,
-                        training=self.is_training,
+                        training=self.is_training_ae,
                     )
                     x_e = tf.nn.leaky_relu(
                         features=x_e,
@@ -244,7 +245,7 @@ class AutoencoderDenoiser(BaseModel):
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
                         epsilon=self.config.trainer.batch_epsilon,
-                        training=self.is_training,
+                        training=self.is_training_ae,
                         name="tconv1/bn",
                     )
                     net = tf.nn.relu(features=net, name="tconv1/relu")
@@ -263,7 +264,7 @@ class AutoencoderDenoiser(BaseModel):
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
                         epsilon=self.config.trainer.batch_epsilon,
-                        training=self.is_training,
+                        training=self.is_training_ae,
                         name="tconv2/bn",
                     )
                     net = tf.nn.relu(features=net, name="tconv2/relu")
@@ -282,7 +283,7 @@ class AutoencoderDenoiser(BaseModel):
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
                         epsilon=self.config.trainer.batch_epsilon,
-                        training=self.is_training,
+                        training=self.is_training_ae,
                         name="tconv3/bn",
                     )
                     net = tf.nn.relu(features=net, name="tconv3/relu")
@@ -300,7 +301,7 @@ class AutoencoderDenoiser(BaseModel):
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
                         epsilon=self.config.trainer.batch_epsilon,
-                        training=self.is_training,
+                        training=self.is_training_ae,
                         name="tconv4/bn",
                     )
                     net = tf.nn.relu(features=net, name="tconv3/relu")
