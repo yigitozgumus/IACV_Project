@@ -25,7 +25,7 @@ class CVAEDenoiser(BaseModel):
         self.logger.info("Building Training Graph")
         with tf.variable_scope("CVAE_Denoiser"):
             self.mean, self.logvar, self.rec_image = self.cvae(self.image_input)
-            eps = tf.random_normal(shape=self.mean.shape)
+            eps = tf.random_normal(shape=tf.shape(self.mean))
             self.z = eps * tf.exp(self.logvar * .5 ) + self.mean
             self.output, self.mask = self.denoiser(self.rec_image)
 
@@ -132,10 +132,10 @@ class CVAEDenoiser(BaseModel):
 
         self.summary_op_cvae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
-        self.summary_op_loss_cvae = tf.summary.merge_all("loss_ae")
+        self.summary_op_loss_cvae = tf.summary.merge_all("loss_cvae")
         self.summary_op_loss_den = tf.summary.merge_all("loss_den")
-        self.summary_all_cvae = tf.summary.merge([self.summary_op_cvae, self.summary_op_loss_ae])
-        self.summary_all_den = tf.summary.merge([self.summary_op_den, self.summary_op_loss_den])
+        #self.summary_all_cvae = tf.summary.merge([self.summary_op_cvae, self.summary_op_loss_cvae])
+        #self.summary_all_den = tf.summary.merge([self.summary_op_den, self.summary_op_loss_den])
         #self.summary_all = tf.summary.merge([self.summary_op_im, self.summary_op_loss])
 
     def cvae(self, image_input, getter=None):
@@ -200,8 +200,9 @@ class CVAEDenoiser(BaseModel):
             mean, logvar = tf.split(x_e, num_or_size_splits=2,axis=1)
 
             with tf.variable_scope("Generative"):
-                eps = tf.random_normal(shape=mean.shape)
-                net = eps * tf.exp(logvar * .5) + mean # Noise reparameterization
+                eps = tf.random_normal(shape=tf.shape(mean))
+                input = eps * tf.exp(logvar * .5) + mean # Noise reparameterization
+                net = tf.reshape(input, [-1, 1, 1, self.config.trainer.noise_dim])
                 net_name = "layer_1"
                 with tf.variable_scope(net_name):
                     net = tf.layers.Conv2DTranspose(
