@@ -25,8 +25,8 @@ class CVAEDenoiser(BaseModel):
         self.logger.info("Building Training Graph")
         with tf.variable_scope("CVAE_Denoiser"):
             self.mean, self.logvar, self.rec_image = self.cvae(self.image_input)
-            # eps = tf.random_normal(shape=tf.shape(self.mean))
-            self.z = self.mean + self.logvar * tf.random_normal(tf.shape(self.mean), 0, 1, dtype=tf.float32)
+            eps = tf.random_normal(shape=tf.shape(self.mean))
+            self.z = self.mean + tf.multiply(tf.exp(0.5 * self.logvar), eps)
             self.output, self.mask = self.denoiser(self.rec_image)
 
         # Loss Function
@@ -37,13 +37,8 @@ class CVAEDenoiser(BaseModel):
                 # logpz = self.log_normal_pdf(self.z, 0., 0.)
                 # logqz_x = self.log_normal_pdf(self.z, self.mean, self.logvar)
                 # self.cvae_loss = -tf.reduce_mean(logpx_z + logpz - logqz_x)
-                marginal_likelihood = tf.reduce_sum(self.image_input * tf.log(self.rec_image) + (1 - self.image_input) * tf.log(1 - self.rec_image), 1)
-                kl_div = 0.5 * tf.reduce_sum(tf.square(self.mean) + tf.square(self.logvar) - tf.log(1e-8 + tf.square(self.logvar)) - 1, 1)
-
-                marginal_likelihood = tf.reduce_mean(marginal_Likelihood)
-                kl_div = tf.reduce_mean(kl_div)
-                elbo = marginal_likelihood - kl_div
-                self.cvae_loss = - elbo
+                self.cvae_loss += tf.reduce_mean(tf.squared_difference(self.image_input, self.rec_image))
+                self.cvae_loss += self.kl_loss(self.mean, self.logvar)
 
             with tf.name_scope("Denoiser"):
                 delta_den = self.output - self.rec_image
@@ -172,6 +167,11 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="conv",
                     )(x_e)
+                    x_e = tf.nn.leaky_relu(
+                        features=x_e,
+                        alpha=self.config.trainer.leakyReLU_alpha,
+                        name="leaky_relu",
+                    )
                     # 14 x 14 x 64
                 net_name = "Layer_2"
                 with tf.variable_scope(net_name):
@@ -183,6 +183,17 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="conv",
                     )(x_e)
+                    x_e = tf.layers.batch_normalization(
+                        x_e,
+                        momentum=self.config.trainer.batch_momentum,
+                        epsilon=self.config.trainer.batch_epsilon,
+                        training=self.is_training_ae,
+                    )
+                    x_e = tf.nn.leaky_relu(
+                        features=x_e,
+                        alpha=self.config.trainer.leakyReLU_alpha,
+                        name="leaky_relu",
+                    )
                     # 7 x 7 x 128
                 net_name = "Layer_3"
                 with tf.variable_scope(net_name):
@@ -194,6 +205,17 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="conv",
                     )(x_e)
+                    x_e = tf.layers.batch_normalization(
+                        x_e,
+                        momentum=self.config.trainer.batch_momentum,
+                        epsilon=self.config.trainer.batch_epsilon,
+                        training=self.is_training_ae,
+                    )
+                    x_e = tf.nn.leaky_relu(
+                        features=x_e,
+                        alpha=self.config.trainer.leakyReLU_alpha,
+                        name="leaky_relu",
+                    )
                     # 4 x 4 x 256
                 x_e = tf.layers.Flatten()(x_e)
                 net_name = "Layer_4"
@@ -208,7 +230,7 @@ class CVAEDenoiser(BaseModel):
 
             with tf.variable_scope("Generative"):
                 eps = tf.random_normal(shape=tf.shape(mean))
-                input = eps * tf.exp(logvar * .5) + mean # Noise reparameterization
+                input = mean + tf.multiply(tf.exp(0.5 * logvar), eps)
                 net = tf.reshape(input, [-1, 1, 1, self.config.trainer.noise_dim])
                 net_name = "layer_1"
                 with tf.variable_scope(net_name):
@@ -220,6 +242,13 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="tconv1",
                     )(net)
+                    net = tf.layers.batch_normalization(
+                        inputs=net,
+                        momentum=self.config.trainer.batch_momentum,
+                        epsilon=self.config.trainer.batch_epsilon,
+                        training=self.is_training_ae,
+                        name="tconv1/bn",
+                    )
                     net = tf.nn.relu(features=net, name="tconv1/relu")
                 net_name = "layer_2"
                 with tf.variable_scope(net_name):
@@ -231,6 +260,13 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="tconv2",
                     )(net)
+                    net = tf.layers.batch_normalization(
+                        inputs=net,
+                        momentum=self.config.trainer.batch_momentum,
+                        epsilon=self.config.trainer.batch_epsilon,
+                        training=self.is_training_ae,
+                        name="tconv2/bn",
+                    )
                     net = tf.nn.relu(features=net, name="tconv2/relu")
 
                 net_name = "layer_3"
@@ -243,6 +279,13 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="tconv3",
                     )(net)
+                    net = tf.layers.batch_normalization(
+                        inputs=net,
+                        momentum=self.config.trainer.batch_momentum,
+                        epsilon=self.config.trainer.batch_epsilon,
+                        training=self.is_training_ae,
+                        name="tconv3/bn",
+                    )
                     net = tf.nn.relu(features=net, name="tconv3/relu")
                 net_name = "layer_4"
                 with tf.variable_scope(net_name):
@@ -254,6 +297,13 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="tconv4",
                     )(net)
+                    net = tf.layers.batch_normalization(
+                        inputs=net,
+                        momentum=self.config.trainer.batch_momentum,
+                        epsilon=self.config.trainer.batch_epsilon,
+                        training=self.is_training_ae,
+                        name="tconv4/bn",
+                    )
                     net = tf.nn.relu(features=net, name="tconv3/relu")
 
                 net_name = "layer_5"
@@ -266,6 +316,7 @@ class CVAEDenoiser(BaseModel):
                         kernel_initializer=self.init_kernel,
                         name="tconv5",
                     )(net)
+                    net = tf.nn.tanh(net, name="tconv5/tanh")
 
             image_rec = net
 
@@ -324,11 +375,9 @@ class CVAEDenoiser(BaseModel):
 
         return output, mask
 
-    def log_normal_pdf(self, sample, mean, logvar, raxis=1):
-        log2pi = tf.log(2. * np.pi)
-        return tf.reduce_sum(
-            -.5 * ((sample - mean) ** 2. * tf.exp(-logvar) + logvar + log2pi),
-            axis=raxis)
+    def kl_loss(self, avg, log_var):
+    with tf.name_scope('KLLoss'):
+        return tf.reduce_mean(-0.5 * tf.reduce_sum(1.0 + log_var - tf.square(avg) - tf.exp(log_var), axis=-1))
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
