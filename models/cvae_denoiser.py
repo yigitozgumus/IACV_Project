@@ -37,7 +37,7 @@ class CVAEDenoiser(BaseModel):
                 # logpz = self.log_normal_pdf(self.z, 0., 0.)
                 # logqz_x = self.log_normal_pdf(self.z, self.mean, self.logvar)
                 # self.cvae_loss = -tf.reduce_mean(logpx_z + logpz - logqz_x)
-                self.cvae_loss += tf.reduce_mean(tf.squared_difference(self.image_input, self.rec_image))
+                self.cvae_loss = tf.reduce_mean(tf.squared_difference(self.image_input, self.rec_image))
                 self.cvae_loss += self.kl_loss(self.mean, self.logvar)
 
             with tf.name_scope("Denoiser"):
@@ -376,8 +376,8 @@ class CVAEDenoiser(BaseModel):
         return output, mask
 
     def kl_loss(self, avg, log_var):
-    with tf.name_scope('KLLoss'):
-        return tf.reduce_mean(-0.5 * tf.reduce_sum(1.0 + log_var - tf.square(avg) - tf.exp(log_var), axis=-1))
+        with tf.name_scope('KLLoss'):
+            return tf.reduce_mean(-0.5 * tf.reduce_sum(1.0 + log_var - tf.square(avg) - tf.exp(log_var), axis=-1))
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
