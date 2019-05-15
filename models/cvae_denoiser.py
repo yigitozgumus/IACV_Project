@@ -25,18 +25,25 @@ class CVAEDenoiser(BaseModel):
         self.logger.info("Building Training Graph")
         with tf.variable_scope("CVAE_Denoiser"):
             self.mean, self.logvar, self.rec_image = self.cvae(self.image_input)
-            eps = tf.random_normal(shape=tf.shape(self.mean))
-            self.z = eps * tf.exp(self.logvar * .5 ) + self.mean
+            # eps = tf.random_normal(shape=tf.shape(self.mean))
+            self.z = self.mean + self.logvar * tf.random_normal(tf.shape(self.mean), 0, 1, dtype=tf.float32)
             self.output, self.mask = self.denoiser(self.rec_image)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):
             with tf.name_scope("CVAE"):
-                cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.rec_image, labels=self.image_input)
-                logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-                logpz = self.log_normal_pdf(self.z, 0., 0.)
-                logqz_x = self.log_normal_pdf(self.z, self.mean, self.logvar)
-                self.cvae_loss = -tf.reduce_mean(logpx_z + logpz - logqz_x)
+                # cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.rec_image, labels=self.image_input)
+                # logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+                # logpz = self.log_normal_pdf(self.z, 0., 0.)
+                # logqz_x = self.log_normal_pdf(self.z, self.mean, self.logvar)
+                # self.cvae_loss = -tf.reduce_mean(logpx_z + logpz - logqz_x)
+                marginal_likelihood = tf.reduce_sum(self.image_input * tf.log(self.rec_image) + (1 - self.image_input) * tf.log(1 - self.rec_image), 1)
+                kl_div = 0.5 * tf.reduce_sum(tf.square(self.mean) + tf.square(self.logvar) - tf.log(1e-8 + tf.square(self.logvar)) - 1, 1)
+
+                marginal_likelihood = tf.reduce_mean(marginal_Likelihood)
+                kl_div = tf.reduce_mean(kl_div)
+                elbo = marginal_likelihood - kl_div
+                self.cvae_loss = - elbo
 
             with tf.name_scope("Denoiser"):
                 delta_den = self.output - self.rec_image
