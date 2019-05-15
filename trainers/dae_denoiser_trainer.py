@@ -6,11 +6,11 @@ from time import time
 from utils.evaluations import save_results
 
 
-class AutoencoderDenoiserTrainer(BaseTrainMulti):
+class DAEDenoiserTrainer(BaseTrainMulti):
 
 
     def __init__(self, sess, model, data, config, logger):
-        super(AutoencoderDenoiserTrainer, self).__init__(sess, model, data, config, logger)
+        super(DAEDenoiserTrainer, self).__init__(sess, model, data, config, logger)
         self.batch_size = self.config.data_loader.batch_size
         self.noise_dim = self.config.trainer.noise_dim
         self.img_dims = self.config.trainer.image_dims
@@ -71,7 +71,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             den_losses.append(den)
             summaries.append(sum_den)
         self.logger.info("Epoch {} terminated".format(cur_epoch))
-        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries)
+        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries,summarizer="valid")
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
@@ -86,7 +86,12 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         )
 
     def train_step_ae(self, image, cur_epoch):
+        noise = np.random.normal(
+            loc = 0.0,
+            scale = 1.0,
+            size = [self.config.data_loader.batch_size] + self.config.trainer.image_dims)
         image_eval = self.sess.run(image)
+        image_eval += noise
         feed_dict = {
             self.model.image_input: image_eval,
             self.model.is_training_ae: True,
