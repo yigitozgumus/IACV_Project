@@ -4,7 +4,7 @@ import numpy as np
 from time import sleep
 from time import time
 from utils.evaluations import save_results
-
+import matplotlib.pyplot as plt
 
 class AutoencoderDenoiserTrainer(BaseTrainMulti):
 
@@ -121,6 +121,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         scores_pipe = []
         inference_time = []
         true_labels = []
+        pipe_delta = []
         # Create the scores
         test_loop = tqdm(range(self.config.data_loader.num_iter_per_test))
         for _ in test_loop:
@@ -132,6 +133,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
+            pipe_delta += self.sess.run(self.model.pipe_delta, feed_dict=feed_dict).tolist()
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         true_labels = np.asarray(true_labels)

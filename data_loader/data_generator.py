@@ -21,7 +21,9 @@ class DataGenerator:
         self.filenames_train = d.get_train_dataset()
         # assert len(self.filenames) == len(self.labels)
         # Create the Dataset using Tensorflow Data API
-        self.dataset = tf.data.Dataset.from_tensor_slices(self.filenames_train)
+        self.dataset = tf.data.Dataset.from_tensor_slices(
+            (self.filenames_train)
+        )
         # Apply parse function to get the numpy array of the images
         self.dataset = self.dataset.map(
             map_func=self._parse_function,
@@ -85,7 +87,6 @@ class DataGenerator:
             self.test_dataset = self.test_dataset.batch(self.config.data_loader.test_batch)
             self.test_iterator = self.test_dataset.make_initializable_iterator()
             self.test_image, self.test_label = self.test_iterator.get_next()
-
     def _parse_function(self, filename):
         # Read the image
         """
@@ -117,22 +118,30 @@ class DataGenerator:
         return image_random_flip_ud
 
     def _parse_function_test(self, img_file, tag):
-        # Read the image
+        # Read the image and label
         img = tf.read_file(img_file)
+        lbl = tf.read_file(tag)
         # Decode the image and the label
         img_decoded = tf.image.decode_jpeg(img)
+        lbl_decoded = tf.image.decode_jpeg(lbl)
+
         image_resized = tf.image.resize_images(
             img_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
         )
+        lbl_resized = tf.image.resize_images(
+            lbl_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
+        )
         image_normalized = tf.image.per_image_standardization(image_resized)
-        image_random_flip_lr = tf.image.random_flip_left_right(
-            image_normalized,
-            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
-        )
-        # Random image flip up-down
-        image_random_flip_ud = tf.image.random_flip_up_down(
-            image_random_flip_lr,
-            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
-        )
+        lbl_normalized = tf.image.per_image_standardization(image_resized)
 
-        return image_random_flip_ud, tag
+        # image_random_flip_lr = tf.image.random_flip_left_right(
+        #     image_normalized,
+        #     seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
+        # )
+        # # Random image flip up-down
+        # image_random_flip_ud = tf.image.random_flip_up_down(
+        #     image_random_flip_lr,
+        #     seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
+        # )
+
+        return image_normalized, lbl_normalized
