@@ -134,6 +134,10 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
             pipe_delta += self.sess.run(self.model.pipe_delta, feed_dict=feed_dict).tolist()
+
+            print(len(pipe_delta[0]))
+            plt.imshow(np.reshape(np.array(pipe_delta[0]),[self.config.data_loader.image_size,self.config.data_loader.image_size]))
+            plt.show()
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         true_labels = np.asarray(true_labels)
