@@ -132,7 +132,7 @@ class DataGenerator:
             lbl_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
         )
         image_normalized = tf.image.per_image_standardization(image_resized)
-        lbl_normalized = tf.image.per_image_standardization(image_resized)
+        lbl_normalized = tf.image.per_image_standardization(lbl_resized)
 
         # image_random_flip_lr = tf.image.random_flip_left_right(
         #     image_normalized,

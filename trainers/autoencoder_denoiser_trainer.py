@@ -5,7 +5,8 @@ from time import sleep
 from time import time
 from utils.evaluations import save_results
 import matplotlib.pyplot as plt
-
+import tensorflow as tf
+import os
 class AutoencoderDenoiserTrainer(BaseTrainMulti):
 
 
@@ -122,6 +123,8 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         inference_time = []
         true_labels = []
         pipe_delta = []
+        file_writer = tf.summary.FileWriter(os.path.join(self.config.log.summary_dir, "test"))
+
         # Create the scores
         test_loop = tqdm(range(self.config.data_loader.num_iter_per_test))
         for _ in test_loop:
@@ -129,17 +132,29 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             test_batch, test_labels = self.sess.run([self.data.test_image, self.data.test_label])
             test_loop.refresh()  # to show immediately the update
             sleep(0.01)
+            #print(test_labels)
             feed_dict = {self.model.image_input: test_batch, self.model.is_training_ae: False}
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
-            pipe_delta += self.sess.run(self.model.pipe_delta, feed_dict=feed_dict).tolist()
-
-            print(len(pipe_delta[0]))
-            plt.imshow(np.reshape(np.array(pipe_delta[0]),[self.config.data_loader.image_size,self.config.data_loader.image_size]))
-            plt.show()
+            pipe_delta_batch = self.sess.run(self.model.pipe_delta, feed_dict=feed_dict).tolist()
+            pipe_delta += pipe_delta_batch
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
+            for i,label in enumerate(test_labels.tolist()):
+                if(np.sum(label) > 10):
+                    # Using the file writer, log the reshaped image.
+                    sumdelta = tf.summary.image("Delta", np.reshape(np.array(pipe_delta_batch[i]),[1,self.config.data_loader.image_size,self.config.data_loader.image_size,1]))
+                    sumdelta = self.sess.run(sumdelta)
+                    summask = tf.summary.image("Original Mask", np.reshape(np.array(label),[1,self.config.data_loader.image_size,self.config.data_loader.image_size,1]))
+                    summask = self.sess.run(summask)
+                    sumimage = tf.summary.image("Original Image", np.reshape(np.array(test_batch.tolist()[i]),[1,self.config.data_loader.image_size,self.config.data_loader.image_size,1]))
+                    sumimage = self.sess.run(sumimage)
+                    merged = tf.summary.merge_all()
+                    merged = self.sess.run(merged)
+                    file_writer.add_summary(merged)
+            
+
         true_labels = np.asarray(true_labels)
         inference_time = np.mean(inference_time)
         self.logger.info("Testing: Mean inference time is {:4f}".format(inference_time))
