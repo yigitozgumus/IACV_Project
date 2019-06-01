@@ -245,7 +245,6 @@ class DAEDenoiser(BaseModel):
                     net = tf.layers.batch_normalization(
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
-                        epsilon=self.config.trainer.batch_epsilon,
                         training=self.is_training_ae,
                         name="tconv1/bn",
                     )
@@ -257,14 +256,13 @@ class DAEDenoiser(BaseModel):
                         filters=256,
                         kernel_size=5,
                         strides=(2, 2),
-                        padding="valid",
+                        padding="same",
                         kernel_initializer=self.init_kernel,
                         name="tconv2",
                     )(net)
                     net = tf.layers.batch_normalization(
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
-                        epsilon=self.config.trainer.batch_epsilon,
                         training=self.is_training_ae,
                         name="tconv2/bn",
                     )
@@ -283,7 +281,6 @@ class DAEDenoiser(BaseModel):
                     net = tf.layers.batch_normalization(
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
-                        epsilon=self.config.trainer.batch_epsilon,
                         training=self.is_training_ae,
                         name="tconv3/bn",
                     )
@@ -301,7 +298,6 @@ class DAEDenoiser(BaseModel):
                     net = tf.layers.batch_normalization(
                         inputs=net,
                         momentum=self.config.trainer.batch_momentum,
-                        epsilon=self.config.trainer.batch_epsilon,
                         training=self.is_training_ae,
                         name="tconv4/bn",
                     )
@@ -312,7 +308,7 @@ class DAEDenoiser(BaseModel):
                     net = tf.layers.Conv2DTranspose(
                         filters=1,
                         kernel_size=5,
-                        strides=(1, 1),
+                        strides=(2, 2),
                         padding="same",
                         kernel_initializer=self.init_kernel,
                         name="tconv5",
