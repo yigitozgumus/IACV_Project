@@ -4,7 +4,7 @@ from utils.utils import get_getter
 
 class DAEDenoiser_mark2(BaseModel):
     def __init__(self, config):
-        super(DAEDenoiser, self).__init__(config)
+        super(DAEDenoiser_mark2, self).__init__(config)
 
         self.build_model()
         self.init_saver()
@@ -31,7 +31,7 @@ class DAEDenoiser_mark2(BaseModel):
         with tf.name_scope("Loss_Function"):
             with tf.name_scope("Autoencoder"):
                 # Contextual Loss
-                delta_enc = self.image_input - self.rec_image
+                delta_enc = self.output - self.rec_image
                 delta_enc = tf.layers.Flatten()(delta_enc)
                 self.auto_loss = tf.reduce_mean(
                     tf.norm(
