@@ -153,7 +153,6 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         joblib.dump(pipeline, 'pipeline_k1000_pca500.pkl')
         train_codebook = pipeline.steps[1][1].cluster_centers_
 
-        print("het")
         validreconloop = tqdm(range(320))
         valid_recon = []
         for _ in validreconloop:
