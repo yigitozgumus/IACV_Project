@@ -188,7 +188,6 @@ class DAEDenoiser_mark2(BaseModel):
                     x_e = tf.layers.batch_normalization(
                         x_e,
                         momentum=self.config.trainer.batch_momentum,
-                        epsilon=self.config.trainer.batch_epsilon,
                         training=self.is_training_ae,
                     )
                     x_e = tf.nn.leaky_relu(
@@ -210,7 +209,6 @@ class DAEDenoiser_mark2(BaseModel):
                     x_e = tf.layers.batch_normalization(
                         x_e,
                         momentum=self.config.trainer.batch_momentum,
-                        epsilon=self.config.trainer.batch_epsilon,
                         training=self.is_training_ae,
                     )
                     x_e = tf.nn.leaky_relu(
