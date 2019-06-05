@@ -7,7 +7,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from utils.utils import working_directory
-from utils.download_data import download_data_material
+#from utils.download_data import download_data_material
 from utils.dirs import listdir_nohidden
 from utils.logger import Logger
 from shutil import rmtree
