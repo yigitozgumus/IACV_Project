@@ -3,9 +3,15 @@ from tqdm import tqdm
 import numpy as np
 from time import sleep
 from time import time
-from utils.evaluations import save_results
+from utils.evaluations import save_results,determine_normality_param,predict_anomaly
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.pipeline import Pipeline
+from sklearn.externals.joblib import load 
 
-
+import os
 class AutoencoderDenoiserTrainer(BaseTrainMulti):
 
 
@@ -121,9 +127,47 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         scores_pipe = []
         inference_time = []
         true_labels = []
+        pipe_output = []
+        pipe_delta = []
+        file_writer = tf.summary.FileWriter(os.path.join(self.config.log.summary_dir, "test"))
+
+
+        train_recon = []
+        trainreconloop = tqdm(range(self.config.data_loader.num_iter_per_epoch))
+        self.data.valid_image
+        for _ in trainreconloop:
+            train_batch = self.sess.run(self.data.image)
+            feed_dict = {self.model.image_input: train_batch, self.model.is_training_ae: False}
+            train_output_batch = self.sess.run(self.model.output, feed_dict=feed_dict).tolist()
+            train_recon+=train_output_batch
+
+        train_recon = np.reshape(np.array(train_recon),[len(train_recon),self.config.data_loader.image_size**2])
+        pca = PCA(n_components = 500)
+        km = KMeans(1000)
+        pipeline = Pipeline([
+        ('pca', pca),('cluster', km)
+        ])
+
+        pipeline.fit(train_recon)
+        from sklearn.externals import joblib
+        joblib.dump(pipeline, 'pipeline_k1000_pca500.pkl')
+        train_codebook = pipeline.steps[1][1].cluster_centers_
+
+
+        validreconloop = tqdm(range(320))
+        valid_recon = []
+        for _ in validreconloop:
+            valid_batch = self.sess.run(self.data.valid_image)
+            feed_dict = {self.model.image_input: valid_batch, self.model.is_training_ae: False}
+            valid_output_batch = self.sess.run(self.model.output, feed_dict=feed_dict).tolist()
+            valid_recon+=valid_output_batch
+
+
         # Create the scores
         test_loop = tqdm(range(self.config.data_loader.num_iter_per_test))
-        for _ in test_loop:
+        pred_labels = []
+        scores_km = []
+        for cur_epoch in test_loop:
             test_batch_begin = time()
             test_batch, test_labels = self.sess.run([self.data.test_image, self.data.test_label])
             test_loop.refresh()  # to show immediately the update
@@ -132,15 +176,27 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
+            pipe_delta_batch = self.sess.run(self.model.pipe_delta, feed_dict=feed_dict).tolist()
+            pipe_delta += pipe_delta_batch
+            pipe_output_batch = self.sess.run(self.model.output, feed_dict=feed_dict).tolist()
+            pipe_output+=pipe_output_batch
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
+            test_batch = pipe.step[0,1].transform(test_batch)
+            pred_labels_temp ,scores_km_temp= predict_anomaly(test_batch,train_codebook,0)
+            # pred_labels.append(pred_labels_temp) 
+            scores_km += (scores_km_temp.tolist())
+         
+            
+        # np.save('pred_labels',pred_labels)
         true_labels = np.asarray(true_labels)
         inference_time = np.mean(inference_time)
         self.logger.info("Testing: Mean inference time is {:4f}".format(inference_time))
         scores_rec = np.asarray(scores_rec)
         scores_den = np.asarray(scores_den)
         scores_pipe = np.asarray(scores_pipe)
-        # scores_scaled = (scores - min(scores)) / (max(scores) - min(scores))
+        scores_km = np.asarray(scores_km)
+
         step = self.sess.run(self.model.global_step_tensor)
         percentiles = np.asarray(self.config.trainer.percentiles)
         save_results(
@@ -150,6 +206,20 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             self.config.model.name,
             self.config.data_loader.dataset_name,
             "scores_rec",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_km,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "scores_km",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,
@@ -185,4 +255,5 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             step,
             percentile=percentiles,
         )
+
 

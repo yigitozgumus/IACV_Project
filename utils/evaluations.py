@@ -16,6 +16,7 @@ import pandas as pd
 import time
 import matplotlib.cm as cm
 from utils.utils import working_directory
+from sklearn.metrics.pairwise import euclidean_distances
 
 # import cv2
 sns.set(color_codes=True)
@@ -398,3 +399,31 @@ def save_results_csv(fname, results, header=0):
         writer = csv.writer(f)
         new_rows.append(results)  # add the modified rows
         writer.writerows(new_rows)
+
+def determine_normality_param(train_codebook,valid_recon,alpha=1,m=200):
+
+    K = euclidean_distances(valid_recon,train_codebook)
+    indmat = np.argsort(K,axis=1)
+    topm_K = []
+    for i in range(K.shape[0]):
+        idx = indmat[i,:m]
+        topm_K.append(K[i,idx])
+    topm_K = np.array(topm_K)
+    d = np.mean(topm_K,axis=1)
+    mu_th = np.mean(d)
+    sigma_th = np.std(d)
+    alpha = 1
+    threshold = mu_th + sigma_th*alpha
+    return threshold
+
+def predict_anomaly(test_batch,train_codebook,threshold,m=200):    
+    test_batch = np.reshape(test_batch,[test_batch.shape[0],test_batch.shape[1]*test_batch.shape[2]])
+    K = euclidean_distances(test_batch,train_codebook)
+    indmat = np.argsort(K,axis=1)
+    topm_K = []
+    for i in range(K.shape[0]):
+        idx = indmat[i,:m]
+        topm_K.append(K[i,idx])
+    topm_K = np.array(topm_K)
+    d_test = np.mean(topm_K,axis=1)
+    return threshold<d_test,d_test

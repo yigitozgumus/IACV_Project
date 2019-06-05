@@ -120,19 +120,19 @@ class DataGenerator:
     def _parse_function_test(self, img_file, tag):
         # Read the image and label
         img = tf.read_file(img_file)
-        lbl = tf.read_file(tag)
+        #lbl = tf.read_file(tag)
         # Decode the image and the label
         img_decoded = tf.image.decode_jpeg(img)
-        lbl_decoded = tf.image.decode_jpeg(lbl)
+        #lbl_decoded = tf.image.decode_jpeg(lbl)
 
         image_resized = tf.image.resize_images(
             img_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
         )
-        lbl_resized = tf.image.resize_images(
-            lbl_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
-        )
+        #lbl_resized = tf.image.resize_images(
+        #    lbl_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
+        #)
         image_normalized = tf.image.per_image_standardization(image_resized)
-        lbl_normalized = tf.image.per_image_standardization(lbl_resized)
+        #lbl_normalized = tf.image.per_image_standardization(lbl_resized)
 
         # image_random_flip_lr = tf.image.random_flip_left_right(
         #     image_normalized,
@@ -144,4 +144,4 @@ class DataGenerator:
         #     seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
         # )
 
-        return image_normalized, lbl_normalized
+        return image_normalized, tag
