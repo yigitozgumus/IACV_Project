@@ -42,7 +42,8 @@ class AutoencoderDenoiser(BaseModel):
                     )
                 )
             with tf.name_scope("Denoiser"):
-                delta_den = self.output - self.rec_image
+                # This part was normally the rec_image which was input but trying sth new.
+                delta_den = self.output - self.image_input
                 delta_den = tf.layers.Flatten()(delta_den)
                 self.den_loss = tf.reduce_mean(
                     tf.norm(

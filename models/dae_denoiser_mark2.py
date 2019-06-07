@@ -86,7 +86,7 @@ class DAEDenoiser_mark2(BaseModel):
                 )
 
             with tf.control_dependencies(self.den_update_ops):
-                self.den_op = self.optimizer.minimize(self.den_loss, var_list=self.denoiser_vars)
+                self.den_op = self.optimizer.minimize(self.den_loss, var_list=self.denoiser_vars,global_step=self.global_step_tensor)
 
             # Exponential Moving Average for Estimation
             self.auto_ema = tf.train.ExponentialMovingAverage(decay=self.config.trainer.ema_decay)
