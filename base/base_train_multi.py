@@ -25,6 +25,16 @@ class BaseTrainMulti:
         self.rows = int(np.sqrt(self.config.log.num_example_imgs_to_generate))
 
     def train(self):
+        self.logger.info("Training of Autoencoder is started")
+        for cur_epoch in range(
+            self.model.cur_epoch_tensor.eval(self.sess),
+            self.config.data_loader.num_epochs_ae + 1,
+            1,
+        ):
+            self.train_epoch_ae()
+            self.sess.run(self.model.increment_cur_epoch_tensor)
+        
+        self.sess.run(self.model.reset_cur_epoch_tensor)
 
         self.logger.info("Training of Denoiser is started")
         for cur_epoch in range(
@@ -33,16 +43,6 @@ class BaseTrainMulti:
                 1,
         ):
             self.train_epoch_den()
-            self.sess.run(self.model.increment_cur_epoch_tensor)
-        
-        self.sess.run(self.model.reset_cur_epoch_tensor)
-        self.logger.info("Training of Autoencoder is started")
-        for cur_epoch in range(
-            self.model.cur_epoch_tensor.eval(self.sess),
-            self.config.data_loader.num_epochs_ae + 1,
-            1,
-        ):
-            self.train_epoch_ae()
             self.sess.run(self.model.increment_cur_epoch_tensor)
 
 
