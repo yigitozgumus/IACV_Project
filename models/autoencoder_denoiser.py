@@ -257,7 +257,7 @@ class AutoencoderDenoiser(BaseModel):
                         filters=256,
                         kernel_size=5,
                         strides=(2, 2),
-                        padding="valid",
+                        padding="same",
                         kernel_initializer=self.init_kernel,
                         name="tconv2",
                     )(net)
@@ -312,7 +312,7 @@ class AutoencoderDenoiser(BaseModel):
                     net = tf.layers.Conv2DTranspose(
                         filters=1,
                         kernel_size=5,
-                        strides=(1, 1),
+                        strides=(2, 2),
                         padding="same",
                         kernel_initializer=self.init_kernel,
                         name="tconv5",
