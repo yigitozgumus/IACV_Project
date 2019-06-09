@@ -132,36 +132,32 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         file_writer = tf.summary.FileWriter(os.path.join(self.config.log.summary_dir, "test"))
 
 
-        train_recon = []
-        trainreconloop = tqdm(range(self.config.data_loader.num_iter_per_epoch))
-        self.data.valid_image
-        for _ in trainreconloop:
-            train_batch = self.sess.run(self.data.image)
-            feed_dict = {self.model.image_input: train_batch, self.model.is_training_ae: False}
-            train_output_batch = self.sess.run(self.model.output, feed_dict=feed_dict).tolist()
-            train_recon+=train_output_batch
+        # delta_train = []
+        # trainreconloop = tqdm(range(self.config.data_loader.num_iter_per_epoch))
+        # for _ in trainreconloop:
 
-        train_recon = np.reshape(np.array(train_recon),[len(train_recon),self.config.data_loader.image_size**2])
+        #     train_batch = self.sess.run(self.data.image)
+        #     trainreconloop.refresh()  # to show immediately the update
+        #     sleep(0.01)
+
+        #     feed_dict = {self.model.image_input:train_batch,self.model.is_training_ae: False}
+        #     delta_batch = self.sess.run(self.model.pipe_delta,feed_dict=feed_dict).tolist()
+        #     delta_train+=delta_batch
+
+        # delta_train = np.reshape(np.array(delta_train),[len(delta_train),self.config.data_loader.image_size**2])
+        # np.save('delta_train',delta_train)
+        delta_train = np.load('delta_train.npy')
         pca = PCA(n_components = 500)
         km = KMeans(1000)
         pipeline = Pipeline([
-        ('pca', pca),('cluster', km)
+        ('pca',pca),
+        ('cluster', km)
         ])
 
-        pipeline.fit(train_recon)
+        pipeline.fit(delta_train)
         from sklearn.externals import joblib
-        joblib.dump(pipeline, 'pipeline_k1000_pca500.pkl')
+        joblib.dump(pipeline, 'pipeline_pca500_k1000_delta_novalid.pkl')
         train_codebook = pipeline.steps[1][1].cluster_centers_
-
-
-        validreconloop = tqdm(range(320))
-        valid_recon = []
-        for _ in validreconloop:
-            valid_batch = self.sess.run(self.data.valid_image)
-            feed_dict = {self.model.image_input: valid_batch, self.model.is_training_ae: False}
-            valid_output_batch = self.sess.run(self.model.output, feed_dict=feed_dict).tolist()
-            valid_recon+=valid_output_batch
-
 
         # Create the scores
         test_loop = tqdm(range(self.config.data_loader.num_iter_per_test))
@@ -177,15 +173,10 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
             pipe_delta_batch = self.sess.run(self.model.pipe_delta, feed_dict=feed_dict).tolist()
-            pipe_delta += pipe_delta_batch
-            pipe_output_batch = self.sess.run(self.model.output, feed_dict=feed_dict).tolist()
-            pipe_output+=pipe_output_batch
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
-            test_batch = np.asarray(test_batch)
-            test_batch = np.reshape(test_batch,[self.config.data_loader.test_batch,self.config.data_loader.image_size**2])
-            test_batch = pipeline.steps[0][1].transform(test_batch)
-            pred_labels_temp ,scores_km_temp= predict_anomaly(test_batch,train_codebook,0)
+            pipe_delta_batch = pipeline.steps[0][1].transform(pipe_delta_batch)
+            pred_labels_temp ,scores_km_temp= predict_anomaly(np.array(pipe_delta_batch),train_codebook,0)
             # pred_labels.append(pred_labels_temp) 
             scores_km += (scores_km_temp.tolist())
          
@@ -221,7 +212,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             true_labels,
             self.config.model.name,
             self.config.data_loader.dataset_name,
-            "scores_km",
+            "scores_pca_km_delta_novalid",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,

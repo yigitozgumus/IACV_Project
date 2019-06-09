@@ -417,7 +417,7 @@ def determine_normality_param(train_codebook,valid_recon,alpha=1,m=200):
     return threshold
 
 def predict_anomaly(test_batch,train_codebook,threshold,m=200):    
-    test_batch = np.reshape(test_batch,[test_batch.shape[0],test_batch.shape[1]*test_batch.shape[2]])
+    # test_batch = np.reshape(test_batch,[test_batch.shape[0],test_batch.shape[1]*test_batch.shape[2]])
     K = euclidean_distances(test_batch,train_codebook)
     indmat = np.argsort(K,axis=1)
     topm_K = []
