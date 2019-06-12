@@ -31,7 +31,7 @@ class DAEDenoiser(BaseModel):
         with tf.name_scope("Loss_Function"):
             with tf.name_scope("Autoencoder"):
                 # Contextual Loss
-                delta_enc = self.image_input - self.rec_image
+                delta_enc = self.rec_image - self.image_input
                 delta_enc = tf.layers.Flatten()(delta_enc)
                 self.auto_loss = tf.reduce_mean(
                     tf.norm(
@@ -42,7 +42,7 @@ class DAEDenoiser(BaseModel):
                     )
                 )
             with tf.name_scope("Denoiser"):
-                delta_den = self.output - self.rec_image
+                delta_den = self.output - self.image_input
                 delta_den = tf.layers.Flatten()(delta_den)
                 self.den_loss = tf.reduce_mean(
                     tf.norm(
@@ -120,6 +120,14 @@ class DAEDenoiser(BaseModel):
                 delta_pipe = self.output_ema - self.image_input
                 delta_pipe = tf.layers.Flatten()(delta_pipe)
                 self.pipe_score = tf.norm(delta_pipe, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_1"):
+                delta_mask = (self.output_ema - self.mask_ema) - self.rec_image_ema
+                delta_mask = tf.layers.Flatten()(delta_mask)
+                self.mask_score_1 = tf.norm(delta_mask, ord=2,axis=1,keepdims=False)
+             with tf.variable_scope("Mask_2"):
+                delta_mask_2 = (self.rec_image_ema - self.mask_ema) - self.image_input
+                delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
+                self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
 
         # Summary
         with tf.name_scope("Summary"):
@@ -128,11 +136,11 @@ class DAEDenoiser(BaseModel):
             with tf.name_scope("denoiser_loss"):
                 tf.summary.scalar("loss_den", self.den_loss, ["loss_den"])
             with tf.name_scope("Image"):
-                tf.summary.image("Input_Image", self.image_input, 3, ["image"])
-                tf.summary.image("rec_image",self.rec_image,3, ["image"])
-                tf.summary.image("mask", self.mask, 3, ["image_2"])
-                tf.summary.image("Output_Image", self.output, 3, ["image_2"])
-                tf.summary.image("Rec_Image", self.rec_image, 3, ["image_2"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image"])
+                tf.summary.image("rec_image",self.rec_image,1, ["image"])
+                tf.summary.image("mask", self.mask, 1, ["image_2"])
+                tf.summary.image("Output_Image", self.output, 1, ["image_2"])
+                tf.summary.image("Rec_Image", self.rec_image, 1, ["image_2"])
 
         self.summary_op_ae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
