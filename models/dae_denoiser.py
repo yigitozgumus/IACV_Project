@@ -16,6 +16,9 @@ class DAEDenoiser(BaseModel):
         self.image_input = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
+        self.noise_tensor = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="noise"
+        )
 
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
 
@@ -25,7 +28,7 @@ class DAEDenoiser(BaseModel):
         self.logger.info("Building Training Graph")
         with tf.variable_scope("DAE_Denoiser"):
             self.noise_gen, self.rec_image = self.autoencoder(self.image_input)
-            self.output, self.mask = self.denoiser(self.rec_image)
+            self.output, self.mask = self.denoiser(self.rec_image + self.noise_tensor)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):

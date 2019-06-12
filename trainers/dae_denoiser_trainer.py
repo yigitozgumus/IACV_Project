@@ -105,9 +105,14 @@ class DAEDenoiserTrainer(BaseTrainMulti):
 
 
     def train_step_den(self, image, cur_epoch):
+        noise = np.random.normal(
+            loc = 0.0,
+            scale = 1.0,
+            size = [self.config.data_loader.batch_size] + self.config.trainer.image_dims)
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
+            self.model.noise_tensor: noise,
             self.model.is_training_ae: False,
         }
         # Train Denoiser
