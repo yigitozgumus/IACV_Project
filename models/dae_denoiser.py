@@ -106,7 +106,7 @@ class DAEDenoiser(BaseModel):
 
         self.logger.info("Building Testing Graph...")
         with tf.variable_scope("DAE_Denoiser"):
-            self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input + self.distortion ,getter=get_getter(self.auto_ema))
+            self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input ,getter=get_getter(self.auto_ema))
             self.output_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
 
         with tf.name_scope("Testing"):
@@ -127,7 +127,7 @@ class DAEDenoiser(BaseModel):
                 delta_mask = (self.output_ema - self.mask_ema) - self.rec_image_ema
                 delta_mask = tf.layers.Flatten()(delta_mask)
                 self.mask_score_1 = tf.norm(delta_mask, ord=2,axis=1,keepdims=False)
-             with tf.variable_scope("Mask_2"):
+            with tf.variable_scope("Mask_2"):
                 delta_mask_2 = (self.rec_image_ema - self.mask_ema) - self.image_input
                 delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
                 self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
