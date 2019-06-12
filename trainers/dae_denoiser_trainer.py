@@ -75,9 +75,11 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
+            noise = np.zeros_like(image_eval)
+            feed_dict = {self.model.image_input: image_eval,
+            self.model.noise_tensor: noise, self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
-            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
+            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction],summarizer="valid")
         den_m = np.mean(den_losses)
         self.logger.info(
             "Epoch: {} | time = {} s | loss DEN= {:4f} ".format(
