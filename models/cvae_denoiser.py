@@ -102,12 +102,12 @@ class CVAEDenoiser(BaseModel):
         with tf.variable_scope("CVAE_Denoiser"):
             with tf.variable_scope("CVAE"):
                 self.mean_ema, self.logvar_ema = self.encoder(self.image_input,getter=get_getter(self.cvae_ema))
-                self.z_reparam_ema = self.reparameterize(self.mean_ema, self.logvar_ema)
+                self.z_reparam_ema = self.reparameterize(self.mean_ema, self.logvar_ema, self.batch_size)
                 self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema),apply_sigmoid=True)
             with tf.variable_scope("Denoiser"):
                 self.denoised_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
                 self.mean_den_ema , self.logvar_den_ema = self.encoder(self.denoised_ema, getter=get_getter(self.cvae_ema))
-                self.z_den_ema = self.reparameterize(self.mean_den_ema, self.logvar_den_ema)
+                self.z_den_ema = self.reparameterize(self.mean_den_ema, self.logvar_den_ema,self.batch_size)
 
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):
