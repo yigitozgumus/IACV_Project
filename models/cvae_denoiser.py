@@ -27,18 +27,16 @@ class CVAEDenoiser(BaseModel):
             with tf.variable_scope("CVAE"):
                 self.mean, self.logvar = self.encoder(self.image_input)
                 self.z_reparam = self.reparameterize(self.mean, self.logvar)
-                self.rec_image = self.decoder(self.z_param)
+                self.rec_image = self.decoder(self.z_reparam,apply_sigmoid=True)
             with tf.variable_scope("Denoiser"):
                 self.denoised, self.mask = self.denoiser(self.rec_image)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):
             with tf.name_scope("CVAE"):
-                cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=self.rec_image, labels=self.image_input)
-                logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-                logpz = self.log_normal_pdf(self.z_reparam, 0., 0.)
-                logqz_x = self.log_normal_pdf(self.z_reparam, self.mean, self.logvar)
-                self.cvae_loss = -tf.reduce_mean(logpx_z + logpz - logqz_x)
+                self.reconstruction_loss = - tf.reduce_sum(self.image_input * tf.log(1e-10 + self.rec_image) + (1 - self.image_input) * tf.log(1e-10 + (1 - self.rec_image)),1)
+                self.latent_loss = -0.5 * tf.reduce_sum(1 + self.logvar  - tf.square(self.mean) - tf.exp(self.logvar), 1)
+                self.cvae_loss = tf.reduce_mean(self.reconstruction_loss + self.latent_loss)
 
             with tf.name_scope("Denoiser"):
                 delta_den = self.denoised - self.image_input
@@ -104,10 +102,10 @@ class CVAEDenoiser(BaseModel):
         with tf.variable_scope("CVAE_Denoiser"):
             with tf.variable_scope("CVAE"):
                 self.mean_ema, self.logvar_ema = self.encoder(self.image_input,getter=get_getter(self.cvae_ema))
-                self.z_reparam_ema = self.reparameterize(self.mean, self.logvar)
-                self.rec_image_ema = self.decoder(self.z_param,getter=get_getter(self.cvae_ema))
+                self.z_reparam_ema = self.reparameterize(self.mean_ema, self.logvar_ema)
+                self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema))
             with tf.variable_scope("Denoiser"):
-                self.denoised_ema, self.mask_ema = self.denoiser(self.rec_image,getter=get_getter(self.den_ema))
+                self.denoised_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
 
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):

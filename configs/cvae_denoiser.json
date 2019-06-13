@@ -12,7 +12,7 @@
         "name": "data_generator.DataGenerator",
         "random_seed" :42,
         "buffer_size": 51200,
-        "image_size": 28,
+        "image_size": 32,
         "batch_size": 32,
         "num_epochs_ae": 50,
         "num_epochs_den": 100,
