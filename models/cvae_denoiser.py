@@ -103,7 +103,7 @@ class CVAEDenoiser(BaseModel):
             with tf.variable_scope("CVAE"):
                 self.mean_ema, self.logvar_ema = self.encoder(self.image_input,getter=get_getter(self.cvae_ema))
                 self.z_reparam_ema = self.reparameterize(self.mean_ema, self.logvar_ema)
-                self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema))
+                self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema),apply_sigmoid=True)
             with tf.variable_scope("Denoiser"):
                 self.denoised_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
 
@@ -147,7 +147,7 @@ class CVAEDenoiser(BaseModel):
         # This generator will take the image from the input dataset, and first it will
         # it will create a latent representation of that image then with the decoder part,
         # it will reconstruct the image.
-       
+
         with tf.variable_scope("Inference",custom_getter=getter, reuse=tf.AUTO_REUSE):
             x_e = tf.reshape(
                 image_input,
@@ -230,7 +230,7 @@ class CVAEDenoiser(BaseModel):
         mean, logvar = tf.split(x_e, num_or_size_splits=2,axis=1)
         return mean, logvar
 
-    def decoder(self, noise_input, getter=None, apply_sigmoid=False):        
+    def decoder(self, noise_input, getter=None, apply_sigmoid=False):
 
         with tf.variable_scope("Generative",custom_getter=getter, reuse=tf.AUTO_REUSE):
             net = tf.reshape(noise_input, [-1, 1, 1, self.config.trainer.noise_dim])
