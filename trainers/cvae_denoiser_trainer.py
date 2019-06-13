@@ -124,7 +124,9 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         scores_rec = []
         scores_den = []
         scores_pipe = []
+        scores_pipe_2 = []
         scores_comb = []
+        scores_noise = []
         inference_time = []
         true_labels = []
         # Create the scores
@@ -140,7 +142,9 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
+            scores_pipe_2 += self.sess.run(self.model.pipe_score_2, feed_dict=feed_dict).tolist()
             scores_comb += self.sess.run(self.model.comb_score, feed_dict=feed_dict).tolist()
+            scores_noise += self.sess.run(self.model.noise_score, feed_dict=feed_dict).tolist()
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         true_labels = np.asarray(true_labels)
@@ -149,7 +153,9 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         scores_rec = np.asarray(scores_rec)
         scores_den = np.asarray(scores_den)
         scores_pipe = np.asarray(scores_pipe)
+        scores_pipe_2 = np.asarray(scores_pipe_2)
         scores_comb = np.asarray(scores_comb)
+        scores_noise = np.asarray(scores_noise)
         # scores_scaled = (scores - min(scores)) / (max(scores) - min(scores))
         step = self.sess.run(self.model.global_step_tensor)
         percentiles = np.asarray(self.config.trainer.percentiles)
@@ -188,6 +194,34 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
             self.config.model.name,
             self.config.data_loader.dataset_name,
             "pipe",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_pipe_2,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "pipe_2",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_noise,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "noise",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,

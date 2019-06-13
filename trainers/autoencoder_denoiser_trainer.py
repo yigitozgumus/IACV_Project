@@ -72,13 +72,13 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             den_losses.append(den)
             summaries.append(sum_den)
         self.logger.info("Epoch {} terminated".format(cur_epoch))
-        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries)
+        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries, summarizer="valid")
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
             feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
-            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
+            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction], summarizer="valid")
         den_m = np.mean(den_losses)
         self.logger.info(
             "Epoch: {} | time = {} s | loss DEN= {:4f} ".format(
@@ -119,6 +119,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         scores_rec = []
         scores_den = []
         scores_pipe = []
+        scores_pipe_2 = []
         inference_time = []
         true_labels = []
         # Create the scores
@@ -132,6 +133,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
+            scores_pipe_2 += self.sess.run(self.model.pipe_score_2, feed_dict=feed_dict).tolist()
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         true_labels = np.asarray(true_labels)
@@ -140,6 +142,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         scores_rec = np.asarray(scores_rec)
         scores_den = np.asarray(scores_den)
         scores_pipe = np.asarray(scores_pipe)
+        scores_pipe_2 = np.asarray(scores_pipe_2)
         # scores_scaled = (scores - min(scores)) / (max(scores) - min(scores))
         step = self.sess.run(self.model.global_step_tensor)
         percentiles = np.asarray(self.config.trainer.percentiles)
@@ -177,7 +180,21 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             true_labels,
             self.config.model.name,
             self.config.data_loader.dataset_name,
-            "scores_pipe",
+            "scores_pipe_1",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_pipe_2,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "scores_pipe_2",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,

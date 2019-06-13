@@ -129,6 +129,7 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         scores_rec = []
         scores_den = []
         scores_pipe = []
+        scores_pipe_2 = []
         scores_mask1 = []
         scores_mask2 = []
         inference_time = []
@@ -144,6 +145,7 @@ class DAEDenoiserTrainer(BaseTrainMulti):
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
+            scores_pipe_2 += self.sess.run(self.model.pipe_score_2, feed_dict=feed_dict).tolist()
             scores_mask1 += self.sess.run(self.model.mask_score_1, feed_dict=feed_dict).tolist()
             scores_mask2 += self.sess.run(self.model.mask_score_2, feed_dict=feed_dict).tolist()
             inference_time.append(time() - test_batch_begin)
@@ -154,6 +156,7 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         scores_rec = np.asarray(scores_rec)
         scores_den = np.asarray(scores_den)
         scores_pipe = np.asarray(scores_pipe)
+        scores_pipe_2 = np.asarray(scores_pipe_2)
         scores_mask1 = np.asarray(scores_mask1)
         scores_mask2 = np.asarray(scores_mask2)
         # scores_scaled = (scores - min(scores)) / (max(scores) - min(scores))
@@ -193,7 +196,21 @@ class DAEDenoiserTrainer(BaseTrainMulti):
             true_labels,
             self.config.model.name,
             self.config.data_loader.dataset_name,
-            "pipe",
+            "pipe_1",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_pipe_2,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "pipe_2",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,

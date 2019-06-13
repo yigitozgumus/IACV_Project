@@ -23,6 +23,7 @@ class AutoencoderDenoiser(BaseModel):
 
         # Encoder Decoder Part first
         self.logger.info("Building Training Graph")
+
         with tf.variable_scope("Autoencoder_Denoiser"):
             self.noise_gen, self.rec_image = self.autoencoder(self.image_input)
             self.output, self.mask = self.denoiser(self.rec_image)
@@ -117,10 +118,15 @@ class AutoencoderDenoiser(BaseModel):
                 delta_den = self.output_ema - self.rec_image_ema
                 delta_den = tf.layers.Flatten()(delta_den)
                 self.den_score = tf.norm(delta_den, ord=2, axis=1,keepdims=False)
-            with tf.variable_scope("Pipeline_Loss"):
+            with tf.variable_scope("Pipeline_Loss_1"):
                 delta_pipe = self.output_ema - self.image_input
                 delta_pipe = tf.layers.Flatten()(delta_pipe)
                 self.pipe_score = tf.norm(delta_pipe, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Pipeline_Loss_2"):
+                delta_pipe = self.output_ema - self.image_input
+                delta_pipe = tf.layers.Flatten()(delta_pipe)
+                self.pipe_score_2 = tf.norm(delta_pipe, ord=2,axis=1,keepdims=False)
+            
 
         # Summary
         with tf.name_scope("Summary"):
@@ -129,10 +135,11 @@ class AutoencoderDenoiser(BaseModel):
             with tf.name_scope("denoiser_loss"):
                 tf.summary.scalar("loss_den", self.den_loss, ["loss_den"])
             with tf.name_scope("Image"):
-                tf.summary.image("Input_Image", self.image_input, 3, ["image"])
-                tf.summary.image("rec_image",self.rec_image,3, ["image"])
-                tf.summary.image("rec_image", self.rec_image, 3, ["image_2"])
-                tf.summary.image("Output_Image", self.output, 3, ["image_2"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image"])
+                tf.summary.image("rec_image",self.rec_image,1, ["image"])
+                tf.summary.image("rec_image", self.rec_image, 1, ["image_2"])
+                tf.summary.image("Output_Image", self.output, 1, ["image_2"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image_2"])
 
         self.summary_op_ae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
