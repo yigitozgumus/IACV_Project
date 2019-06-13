@@ -106,6 +106,8 @@ class CVAEDenoiser(BaseModel):
                 self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema),apply_sigmoid=True)
             with tf.variable_scope("Denoiser"):
                 self.denoised_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
+                self.mean_den_ema , self.logvar_den_ema = self.encoder(self.denoised_ema, getter=get_getter(self.cvae_ema))
+                self.z_den_ema = self.reparameterize(self.mean_den_ema, self.logvar_den_ema)
 
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):
@@ -120,7 +122,12 @@ class CVAEDenoiser(BaseModel):
             with tf.variable_scope("Pipeline_Loss"):
                 delta_pipe = self.denoised_ema - self.image_input
                 delta_pipe = tf.layers.Flatten()(delta_pipe)
-                self.pipe_score = tf.norm(delta_pipe, ord=1,axis=1,keepdims=False)
+                self.pipe_score = tf.norm(delta_pipe, ord=2,axis=1,keepdims=False)
+            with tf.variable_scope("Combination_Loss"):
+                delta_comb = self.z_reparam_ema - self.z_den_ema 
+                delta_comb = tf.layers.Flatten()(delta_comb)
+                comb_score = tf.norm(delta_comb, ord=2,axis=1, keepdims=False)
+                self.comb_score = 0.25 * comb_score + self.pipe_score
 
         # Summary
         with tf.name_scope("Summary"):
