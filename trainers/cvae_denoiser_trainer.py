@@ -94,6 +94,7 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
+            self.model.batch_size : self.config.data_loader.batch_size,
             self.model.is_training_ae: True,
         }
         # Train Autoencoder
@@ -108,6 +109,7 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
+            self.model.batch_size : self.config.data_loader.batch_size,
             self.model.is_training_ae: False,
         }
         # Train Denoiser
