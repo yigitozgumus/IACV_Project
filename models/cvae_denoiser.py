@@ -17,9 +17,6 @@ class CVAEDenoiser(BaseModel):
         self.image_input = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
-        self.noise_tensor = tf.placeholder(
-            tf.float32, shape=[None] + self.config.trainer.image_dims, name="noise"
-        )
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
 
         ## Architecture
@@ -147,12 +144,13 @@ class CVAEDenoiser(BaseModel):
         #self.summary_all_den = tf.summary.merge([self.summary_op_den, self.summary_op_loss_den])
         #self.summary_all = tf.summary.merge([self.summary_op_im, self.summary_op_loss])
 
+
     def encoder(self, image_input, getter=None):
         # This generator will take the image from the input dataset, and first it will
         # it will create a latent representation of that image then with the decoder part,
         # it will reconstruct the image.
        
-        with tf.variable_scope("Inference"):
+        with tf.variable_scope("Inference",custom_getter=getter, reuse=tf.AUTO_REUSE):
             x_e = tf.reshape(
                 image_input,
                 [
@@ -232,10 +230,11 @@ class CVAEDenoiser(BaseModel):
                 )(x_e)
 
         mean, logvar = tf.split(x_e, num_or_size_splits=2,axis=1)
+        return mean, logvar
 
     def decoder(self, noise_input, getter=None, apply_sigmoid=False):        
 
-        with tf.variable_scope("Generative"):
+        with tf.variable_scope("Generative",custom_getter=getter, reuse=tf.AUTO_REUSE):
             net = tf.reshape(noise_input, [-1, 1, 1, self.config.trainer.noise_dim])
             net_name = "layer_1"
             with tf.variable_scope(net_name):
@@ -254,7 +253,7 @@ class CVAEDenoiser(BaseModel):
                     filters=256,
                     kernel_size=5,
                     strides=(2, 2),
-                    padding="valid",
+                    padding="same",
                     kernel_initializer=self.init_kernel,
                     name="tconv2",
                 )(net)
@@ -354,7 +353,7 @@ class CVAEDenoiser(BaseModel):
             return tf.reduce_mean(-0.5 * tf.reduce_sum(1.0 + log_var - tf.square(avg) - tf.exp(log_var), axis=-1))
 
     def reparameterize(self, mean, logvar):
-        eps = tf.random_normal(shape=mean.shape)
+        eps = tf.random_normal(shape=[self.config.data_loader.batch_size, self.config.trainer.noise_dim])
         return eps * tf.exp(logvar * .5) + mean
 
     def log_normal_pdf(self, sample, mean, logvar, raxis=1):
