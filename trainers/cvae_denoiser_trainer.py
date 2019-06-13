@@ -43,7 +43,9 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
+            feed_dict = {self.model.image_input: image_eval, 
+                        self.model.batch_size : self.config.data_loader.batch_size,
+                        self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_cvae, feed_dict=feed_dict)
             self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
         ae_m = np.mean(ae_losses)
@@ -71,13 +73,15 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
             den_losses.append(den)
             summaries.append(sum_den)
         self.logger.info("Epoch {} terminated".format(cur_epoch))
-        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries)
+        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries,summarizer="valid")
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
+            feed_dict = {self.model.image_input: image_eval, 
+            self.model.batch_size : self.config.data_loader.batch_size,
+            self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
-            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
+            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction],summarizer="valid")
         den_m = np.mean(den_losses)
         self.logger.info(
             "Epoch: {} | time = {} s | loss DEN= {:4f} ".format(
@@ -104,7 +108,7 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
-            self.model.is_training_ae: True,
+            self.model.is_training_ae: False,
         }
         # Train Denoiser
         _, lden, sm_den = self.sess.run(
@@ -127,7 +131,9 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
             test_batch, test_labels = self.sess.run([self.data.test_image, self.data.test_label])
             test_loop.refresh()  # to show immediately the update
             sleep(0.01)
-            feed_dict = {self.model.image_input: test_batch, self.model.is_training_ae: False}
+            feed_dict = {self.model.image_input: test_batch, 
+            self.model.batch_size : self.config.data_loader.test_batch,
+            self.model.is_training_ae: False}
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()

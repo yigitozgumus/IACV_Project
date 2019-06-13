@@ -18,7 +18,7 @@ class CVAEDenoiser(BaseModel):
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
-
+        self.batch_size = tf.placeholder(tf.int32)
         ## Architecture
 
         # Encoder Decoder Part first
@@ -26,7 +26,7 @@ class CVAEDenoiser(BaseModel):
         with tf.variable_scope("CVAE_Denoiser"):
             with tf.variable_scope("CVAE"):
                 self.mean, self.logvar = self.encoder(self.image_input)
-                self.z_reparam = self.reparameterize(self.mean, self.logvar)
+                self.z_reparam = self.reparameterize(self.mean, self.logvar,self.batch_size)
                 self.rec_image = self.decoder(self.z_reparam,apply_sigmoid=True)
             with tf.variable_scope("Denoiser"):
                 self.denoised, self.mask = self.denoiser(self.rec_image)
@@ -103,7 +103,7 @@ class CVAEDenoiser(BaseModel):
             with tf.variable_scope("CVAE"):
                 self.mean_ema, self.logvar_ema = self.encoder(self.image_input,getter=get_getter(self.cvae_ema))
                 self.z_reparam_ema = self.reparameterize(self.mean_ema, self.logvar_ema)
-                self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema))
+                self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema),apply_sigmoid=True)
             with tf.variable_scope("Denoiser"):
                 self.denoised_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
 
@@ -131,8 +131,10 @@ class CVAEDenoiser(BaseModel):
             with tf.name_scope("Image"):
                 tf.summary.image("Input_Image", self.image_input, 1, ["image"])
                 tf.summary.image("rec_image",self.rec_image,1, ["image"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image_2"])
                 tf.summary.image("rec_image", self.rec_image, 1, ["image_2"])
-                tf.summary.image("Output_Image", self.denoised, 1, ["image_2"])
+                tf.summary.image("Denoised_Image", self.denoised, 1, ["image_2"])
+                tf.summary.image("mask", self.mask, 1, ["image_2"])
 
         self.summary_op_cvae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
@@ -350,8 +352,8 @@ class CVAEDenoiser(BaseModel):
         with tf.name_scope('KLLoss'):
             return tf.reduce_mean(-0.5 * tf.reduce_sum(1.0 + log_var - tf.square(avg) - tf.exp(log_var), axis=-1))
 
-    def reparameterize(self, mean, logvar):
-        eps = tf.random_normal(shape=[self.config.data_loader.batch_size, self.config.trainer.noise_dim])
+    def reparameterize(self, mean, logvar,batch_size):
+        eps = tf.random_normal(shape=[batch_size, self.config.trainer.noise_dim])
         return eps * tf.exp(logvar * .5) + mean
 
     def log_normal_pdf(self, sample, mean, logvar, raxis=1):
