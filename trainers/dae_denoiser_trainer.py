@@ -49,6 +49,7 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         self.logger.info(
             "Epoch: {} | time = {} s | loss AE= {:4f} ".format(cur_epoch, time() - begin, ae_m)
         )
+        self.model.save(self.sess)
 
     def train_epoch_den(self):
         # Attach the epoch loop to a variable
@@ -85,6 +86,7 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         self.logger.info(
             "Epoch: {} | time = {} s | loss DEN= {:4f} ".format(cur_epoch, time() - begin, den_m)
         )
+        self.model.save(self.sess)
 
     def train_step_ae(self, image, cur_epoch):
         noise = np.random.normal(
@@ -134,6 +136,7 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         true_labels = []
         # Create the scores
         test_loop = tqdm(range(self.config.data_loader.num_iter_per_test))
+        cur_epoch = self.model.cur_epoch_tensor.eval(self.sess)
         for _ in test_loop:
             test_batch_begin = time()
             test_batch, test_labels, ground_truth = self.sess.run(
