@@ -100,6 +100,11 @@ class CVAEDenoiser(BaseModel):
         self.logger.info("Building Testing Graph...")
         with tf.variable_scope("CVAE_Denoiser"):
             with tf.variable_scope("CVAE"):
+<<<<<<< HEAD
+                self.mean_ema, self.logvar_ema = self.encoder(self.image_input,getter=get_getter(self.cvae_ema))
+                self.z_reparam_ema = self.reparameterize(self.mean_ema, self.logvar_ema)
+                self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema),apply_sigmoid=True)
+=======
                 self.mean_ema, self.logvar_ema = self.encoder(
                     self.image_input, getter=get_getter(self.cvae_ema)
                 )
@@ -109,6 +114,7 @@ class CVAEDenoiser(BaseModel):
                 self.rec_image_ema = self.decoder(
                     self.z_reparam_ema, getter=get_getter(self.cvae_ema), apply_sigmoid=True
                 )
+>>>>>>> 235cf5355c712b94c81739e843268e69105fa877
             with tf.variable_scope("Denoiser"):
                 self.denoised_ema, self.mask_ema = self.denoiser(
                     self.rec_image_ema, getter=get_getter(self.den_ema)
@@ -148,11 +154,11 @@ class CVAEDenoiser(BaseModel):
                 self.comb_score = 10 * comb_score + self.pipe_score
 
             with tf.variable_scope("Mask_1"):
-                delta_mask = (self.image_input - self.mask_ema) 
+                delta_mask = (self.image_input - self.mask_ema)
                 delta_mask = tf.layers.Flatten()(delta_mask)
                 self.mask_score_1 = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
             with tf.variable_scope("Mask_2"):
-                delta_mask_2 = (self.image_input - self.mask_ema) 
+                delta_mask_2 = (self.image_input - self.mask_ema)
                 delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
                 self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
 
