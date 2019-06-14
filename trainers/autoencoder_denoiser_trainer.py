@@ -72,13 +72,13 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             den_losses.append(den)
             summaries.append(sum_den)
         self.logger.info("Epoch {} terminated".format(cur_epoch))
-        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries, summarizer="valid")
+        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries, summarizer="train_den")
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
             feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
-            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction], summarizer="valid")
+            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction], summarizer="train_den")
         den_m = np.mean(den_losses)
         self.logger.info(
             "Epoch: {} | time = {} s | loss DEN= {:4f} ".format(
@@ -140,7 +140,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             scores_pipe_2 += self.sess.run(self.model.pipe_score_2, feed_dict=feed_dict).tolist()
             scores_mask1 += self.sess.run(self.model.mask_score_1, feed_dict=feed_dict).tolist()
             scores_mask2 += self.sess.run(self.model.mask_score_2, feed_dict=feed_dict).tolist()
-            summaries.append(self.sess.run([self.model.summary_op_test],feed_dict=feed_dict))
+            summaries +=self.sess.run([self.model.summary_op_test],feed_dict=feed_dict)
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries,summarizer="test")
