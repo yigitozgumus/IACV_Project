@@ -18,6 +18,9 @@ class CVAEDenoiser(BaseModel):
         self.image_input = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
+        self.ground_truth = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="gt"
+        )
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
         self.batch_size = tf.placeholder(tf.int32)
         ## Architecture
@@ -117,6 +120,8 @@ class CVAEDenoiser(BaseModel):
                     self.mean_den_ema, self.logvar_den_ema, self.batch_size
                 )
 
+                self.residual = self.image_input - self.mask_ema
+
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):
                 # |x - D(E(x)) |2
@@ -143,11 +148,11 @@ class CVAEDenoiser(BaseModel):
                 self.comb_score = 10 * comb_score + self.pipe_score
 
             with tf.variable_scope("Mask_1"):
-                delta_mask = (self.input_image - self.mask_ema) 
+                delta_mask = (self.image_input - self.mask_ema) 
                 delta_mask = tf.layers.Flatten()(delta_mask)
                 self.mask_score_1 = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
             with tf.variable_scope("Mask_2"):
-                delta_mask_2 = (self.input_image - self.mask_ema) 
+                delta_mask_2 = (self.image_input - self.mask_ema) 
                 delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
                 self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
 
@@ -165,8 +170,16 @@ class CVAEDenoiser(BaseModel):
                 tf.summary.image("Denoised_Image", self.denoised, 1, ["image_2"])
                 tf.summary.image("mask", self.mask, 1, ["image_2"])
 
+                tf.summary.image("mask", self.mask_ema, 1, ["image_3"])
+                tf.summary.image("Output_Image", self.denoised_ema, 1, ["image_3"])
+                tf.summary.image("Rec_Image", self.rec_image_ema, 1, ["image_3"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image_3"])
+                tf.summary.image("Residual", self.residual,1,["image_3"])
+                tf.summary.image("Ground_Truth", self.ground_truth,1,["image_3"])
+
         self.summary_op_cvae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
+        self.summary_op_test = tf.summary.merge_all("image_3")
         self.summary_op_loss_cvae = tf.summary.merge_all("loss_cvae")
         self.summary_op_loss_den = tf.summary.merge_all("loss_den")
         # self.summary_all_cvae = tf.summary.merge([self.summary_op_cvae, self.summary_op_loss_cvae])
@@ -342,7 +355,7 @@ class CVAEDenoiser(BaseModel):
             # First convolution from the image second one from the first top layer convolution
             mask = net_input + net_layer_1
 
-            for i in range(19):
+            for i in range(24):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,

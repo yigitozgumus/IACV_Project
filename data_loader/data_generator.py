@@ -84,7 +84,7 @@ class DataGenerator:
             # Apply batching
             self.test_dataset = self.test_dataset.batch(self.config.data_loader.test_batch)
             self.test_iterator = self.test_dataset.make_initializable_iterator()
-            self.test_image, self.test_label = self.test_iterator.get_next()
+            self.test_image, self.test_label, self.ground_truth = self.test_iterator.get_next()
 
     def _parse_function(self, filename):
         # Read the image
