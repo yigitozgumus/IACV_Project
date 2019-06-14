@@ -33,7 +33,7 @@ class BaseTrainMulti:
         ):
             self.train_epoch_ae()
             self.sess.run(self.model.increment_cur_epoch_tensor)
-
+        
         self.sess.run(self.model.reset_cur_epoch_tensor)
 
         self.logger.info("Training of Denoiser is started")
@@ -44,6 +44,7 @@ class BaseTrainMulti:
         ):
             self.train_epoch_den()
             self.sess.run(self.model.increment_cur_epoch_tensor)
+
 
 
     def train_epoch_ae(self):

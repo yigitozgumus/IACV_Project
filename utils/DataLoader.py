@@ -7,7 +7,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from utils.utils import working_directory
-from utils.download_data import download_data_material
+#from utils.download_data import download_data_material
 from utils.dirs import listdir_nohidden
 from utils.logger import Logger
 from shutil import rmtree
@@ -243,4 +243,4 @@ class DataLoader:
             labels.append(1) if np.sum(im2arr) > 5100 else labels.append(0)
         labels_f = tf.constant(labels)
 
-        return [img_names, labels_f]
+        return [img_names, labels_f, tag_list_merged]
