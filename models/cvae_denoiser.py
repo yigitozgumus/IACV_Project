@@ -100,11 +100,6 @@ class CVAEDenoiser(BaseModel):
         self.logger.info("Building Testing Graph...")
         with tf.variable_scope("CVAE_Denoiser"):
             with tf.variable_scope("CVAE"):
-<<<<<<< HEAD
-                self.mean_ema, self.logvar_ema = self.encoder(self.image_input,getter=get_getter(self.cvae_ema))
-                self.z_reparam_ema = self.reparameterize(self.mean_ema, self.logvar_ema)
-                self.rec_image_ema = self.decoder(self.z_reparam_ema,getter=get_getter(self.cvae_ema),apply_sigmoid=True)
-=======
                 self.mean_ema, self.logvar_ema = self.encoder(
                     self.image_input, getter=get_getter(self.cvae_ema)
                 )
@@ -114,7 +109,6 @@ class CVAEDenoiser(BaseModel):
                 self.rec_image_ema = self.decoder(
                     self.z_reparam_ema, getter=get_getter(self.cvae_ema), apply_sigmoid=True
                 )
->>>>>>> 235cf5355c712b94c81739e843268e69105fa877
             with tf.variable_scope("Denoiser"):
                 self.denoised_ema, self.mask_ema = self.denoiser(
                     self.rec_image_ema, getter=get_getter(self.den_ema)
@@ -361,7 +355,7 @@ class CVAEDenoiser(BaseModel):
             # First convolution from the image second one from the first top layer convolution
             mask = net_input + net_layer_1
 
-            for i in range(24):
+            for i in range(19):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,

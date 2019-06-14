@@ -155,7 +155,7 @@ class DAEDenoiserTrainer(BaseTrainMulti):
             scores_pipe_2 += self.sess.run(self.model.pipe_score_2, feed_dict=feed_dict).tolist()
             scores_mask1 += self.sess.run(self.model.mask_score_1, feed_dict=feed_dict).tolist()
             scores_mask2 += self.sess.run(self.model.mask_score_2, feed_dict=feed_dict).tolist()
-            summaries.append(self.sess.run([self.model.summary_op_test], feed_dict=feed_dict))
+            summaries += self.sess.run([self.model.summary_op_test], feed_dict=feed_dict)
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries, summarizer="test")

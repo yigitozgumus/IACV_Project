@@ -377,7 +377,7 @@ class DAEDenoiser(BaseModel):
             # First convolution from the image second one from the first top layer convolution
             mask = net_input + net_layer_1
 
-            for i in range(24):
+            for i in range(19):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,
