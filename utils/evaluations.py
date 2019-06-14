@@ -256,7 +256,7 @@ def save_results(
     scores = np.array(scores)
 
     roc_auc = do_roc(scores, true_labels, file_name=file_name, directory=directory)
-
+    prc_auc = do_prc(scores, true_labels, file_name=file_name, directory=directory)
     do_cumdist(scores, file_name=file_name, directory=directory)
 
     do_hist(scores, true_labels, directory, dataset, random_seed, None)
@@ -284,7 +284,9 @@ def save_results(
             weight,
             label,
             step,
+            per,
             roc_auc,
+            prc_auc,
             precision,
             recall,
             f1,
@@ -316,17 +318,19 @@ def save_results(
                 weight,
                 label,
                 step,
+                i,
                 roc_auc,
+                prc_auc,
                 precision,
                 recall,
                 f1,
                 random_seed,
                 time.ctime(),
             ]
-            save_results_csv(location + "results_{}.csv".format(i), results, header=0)
+            save_results_csv(location + "results.csv", results, header=0)
 
-            results = [step, roc_auc, precision, recall, f1, random_seed]
-            fname = directory + "{}_{}.csv".format(label, i)
+            results = [step, i, roc_auc, precision, recall, f1, random_seed]
+            fname = directory + "{}.csv".format(label)
             save_results_csv(fname, results, header=2)
 
 
@@ -372,7 +376,9 @@ def save_results_csv(fname, results, header=0):
                             "Weight",
                             "Label",
                             "Step",
+                            "Percentile",
                             "AUROC",
+                            "PRC",
                             "Precision",
                             "Recall",
                             "F1 score",
@@ -385,7 +391,17 @@ def save_results_csv(fname, results, header=0):
                 writer.writerows([["Precision", "Recall", "F1 score", "Random Seed"]])
             elif header == 2:
                 writer.writerows(
-                    [["Step", "AUROC", "Precision", "Recall", "F1 score", "Random Seed"]]
+                    [
+                        [
+                            "Step",
+                            "Percentile",
+                            "AUROC",
+                            "Precision",
+                            "Recall",
+                            "F1 score",
+                            "Random Seed",
+                        ]
+                    ]
                 )
 
             elif header == 5:

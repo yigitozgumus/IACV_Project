@@ -7,7 +7,6 @@ from utils.evaluations import save_results
 
 
 class CVAEDenoiserTrainer(BaseTrainMulti):
-
     def __init__(self, sess, model, data, config, logger):
         super(CVAEDenoiserTrainer, self).__init__(sess, model, data, config, logger)
         self.batch_size = self.config.data_loader.batch_size
@@ -43,14 +42,16 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
+            feed_dict = {
+                self.model.image_input: image_eval,
+                self.model.batch_size: self.config.data_loader.batch_size,
+                self.model.is_training_ae: False,
+            }
             reconstruction = self.sess.run(self.model.summary_op_cvae, feed_dict=feed_dict)
             self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
         ae_m = np.mean(ae_losses)
         self.logger.info(
-            "Epoch: {} | time = {} s | loss AE= {:4f} ".format(
-                cur_epoch, time() - begin, ae_m
-            )
+            "Epoch: {} | time = {} s | loss AE= {:4f} ".format(cur_epoch, time() - begin, ae_m)
         )
         self.model.save(self.sess)
 
@@ -71,18 +72,22 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
             den_losses.append(den)
             summaries.append(sum_den)
         self.logger.info("Epoch {} terminated".format(cur_epoch))
-        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries)
+        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries, summarizer="train_den")
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
+            feed_dict = {
+                self.model.image_input: image_eval,
+                self.model.batch_size: self.config.data_loader.batch_size,
+                self.model.is_training_ae: False,
+            }
             reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
-            self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction])
+            self.summarizer.add_tensorboard(
+                step=cur_epoch, summaries=[reconstruction], summarizer="train_den"
+            )
         den_m = np.mean(den_losses)
         self.logger.info(
-            "Epoch: {} | time = {} s | loss DEN= {:4f} ".format(
-                cur_epoch, time() - begin, den_m
-            )
+            "Epoch: {} | time = {} s | loss DEN= {:4f} ".format(cur_epoch, time() - begin, den_m)
         )
         self.model.save(self.sess)
 
@@ -90,6 +95,7 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
+            self.model.batch_size: self.config.data_loader.batch_size,
             self.model.is_training_ae: True,
         }
         # Train Autoencoder
@@ -99,12 +105,12 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         )
         return lae, sm_ae
 
-
     def train_step_den(self, image, cur_epoch):
         image_eval = self.sess.run(image)
         feed_dict = {
             self.model.image_input: image_eval,
-            self.model.is_training_ae: True,
+            self.model.batch_size: self.config.data_loader.batch_size,
+            self.model.is_training_ae: False,
         }
         # Train Denoiser
         _, lden, sm_den = self.sess.run(
@@ -118,27 +124,54 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
         scores_rec = []
         scores_den = []
         scores_pipe = []
+        scores_pipe_2 = []
+        scores_comb = []
+        scores_noise = []
+        scores_mask1 = []
+        scores_mask2 = []
+        summaries = []
         inference_time = []
         true_labels = []
         # Create the scores
         test_loop = tqdm(range(self.config.data_loader.num_iter_per_test))
+        cur_epoch = self.model.cur_epoch_tensor.eval(self.sess)
         for _ in test_loop:
             test_batch_begin = time()
-            test_batch, test_labels = self.sess.run([self.data.test_image, self.data.test_label])
+            test_batch, test_labels, ground_truth = self.sess.run(
+                [self.data.test_image, self.data.test_label, self.data.ground_truth]
+            )
             test_loop.refresh()  # to show immediately the update
             sleep(0.01)
-            feed_dict = {self.model.image_input: test_batch, self.model.is_training_ae: False}
+            feed_dict = {
+                self.model.image_input: test_batch,
+                self.model.ground_truth: ground_truth,
+                self.model.batch_size: self.config.data_loader.test_batch,
+                self.model.is_training_ae: False,
+            }
+
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
+            scores_pipe_2 += self.sess.run(self.model.pipe_score_2, feed_dict=feed_dict).tolist()
+            scores_comb += self.sess.run(self.model.comb_score, feed_dict=feed_dict).tolist()
+            scores_noise += self.sess.run(self.model.noise_score, feed_dict=feed_dict).tolist()
+            scores_mask1 += self.sess.run(self.model.mask_score_1, feed_dict=feed_dict).tolist()
+            scores_mask2 += self.sess.run(self.model.mask_score_2, feed_dict=feed_dict).tolist()
+            summaries.append(self.sess.run([self.model.summary_op_test],feed_dict=feed_dict))
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         true_labels = np.asarray(true_labels)
         inference_time = np.mean(inference_time)
+        self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries,summarizer="test")
         self.logger.info("Testing: Mean inference time is {:4f}".format(inference_time))
         scores_rec = np.asarray(scores_rec)
         scores_den = np.asarray(scores_den)
         scores_pipe = np.asarray(scores_pipe)
+        scores_pipe_2 = np.asarray(scores_pipe_2)
+        scores_comb = np.asarray(scores_comb)
+        scores_noise = np.asarray(scores_noise)
+        scores_mask1 = np.asarray(scores_mask1)
+        scores_mask2 = np.asarray(scores_mask2)
         # scores_scaled = (scores - min(scores)) / (max(scores) - min(scores))
         step = self.sess.run(self.model.global_step_tensor)
         percentiles = np.asarray(self.config.trainer.percentiles)
@@ -184,5 +217,73 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
             step,
             percentile=percentiles,
         )
-
-
+        save_results(
+            self.config.log.result_dir,
+            scores_pipe_2,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "pipe_2",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_noise,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "noise",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_comb,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "comb",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_mask1,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "mask_1",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_mask2,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "mask_2",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )

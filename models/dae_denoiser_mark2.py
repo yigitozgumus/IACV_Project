@@ -323,7 +323,7 @@ class DAEDenoiser_mark2(BaseModel):
             # First Convolution + ReLU layer
             net = tf.layers.Conv2D(
                 filters=63,
-                kernel_size=3,
+                kernel_size=5,
                 strides=1,
                 kernel_initializer=self.init_kernel,
                 padding="same",
@@ -332,14 +332,14 @@ class DAEDenoiser_mark2(BaseModel):
             # 1 Convolution of the image for the bottom layer
             net_input = tf.layers.Conv2D(
                 filters=1,
-                kernel_size=3,
+                kernel_size=5,
                 strides=1,
                 kernel_initializer=self.init_kernel,
                 padding="same",
             )(image_input)
             net_layer_1 = tf.layers.Conv2D(
                 filters=1,
-                kernel_size=3,
+                kernel_size=5,
                 strides=1,
                 kernel_initializer=self.init_kernel,
                 padding="same",
@@ -351,7 +351,7 @@ class DAEDenoiser_mark2(BaseModel):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,
-                    kernel_size=3,
+                    kernel_size=5,
                     strides=1,
                     kernel_initializer=self.init_kernel,
                     padding="same",
@@ -360,7 +360,7 @@ class DAEDenoiser_mark2(BaseModel):
                 # Bottom layer single convolutions
                 net_1 = tf.layers.Conv2D(
                     filters=1,
-                    kernel_size=3,
+                    kernel_size=5,
                     strides=1,
                     kernel_initializer=self.init_kernel,
                     padding="same",

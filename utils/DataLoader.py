@@ -243,4 +243,4 @@ class DataLoader:
             labels.append(1) if np.sum(im2arr) > 5100 else labels.append(0)
         labels_f = tf.constant(labels)
 
-        return [img_names, labels_f]
+        return [img_names, labels_f, tag_list_merged]
