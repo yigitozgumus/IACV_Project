@@ -142,6 +142,15 @@ class CVAEDenoiser(BaseModel):
                 self.noise_score = comb_score
                 self.comb_score = 10 * comb_score + self.pipe_score
 
+            with tf.variable_scope("Mask_1"):
+                delta_mask = (self.input_image - self.mask_ema) 
+                delta_mask = tf.layers.Flatten()(delta_mask)
+                self.mask_score_1 = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_2"):
+                delta_mask_2 = (self.input_image - self.mask_ema) 
+                delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
+                self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
+
         # Summary
         with tf.name_scope("Summary"):
             with tf.name_scope("cvae_loss"):
