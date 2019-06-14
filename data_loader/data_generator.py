@@ -69,9 +69,9 @@ class DataGenerator:
 
         # If the mode is anomaly create the test dataset
         if self.config.data_loader.mode == "anomaly":
-            self.test_filenames, self.test_labels = d.get_test_dataset()
+            self.test_filenames, self.test_labels, self.ground_truth = d.get_test_dataset()
             self.test_dataset = tf.data.Dataset.from_tensor_slices(
-                (self.test_filenames, self.test_labels)
+                (self.test_filenames, self.test_labels, self.ground_truth)
             )
             self.test_dataset = self.test_dataset.map(
                 map_func=self._parse_function_test,
@@ -116,17 +116,27 @@ class DataGenerator:
         )
         return image_random_flip_ud
 
-    def _parse_function_test(self, img_file, tag):
+    def _parse_function_test(self, img_file, tag, ground):
         # Read the image
         img = tf.read_file(img_file)
+        ground = tf.read_file(ground)
         # Decode the image and the label
         img_decoded = tf.image.decode_jpeg(img)
+        ground_decoded = tf.image.decode_jpeg(ground)
         image_resized = tf.image.resize_images(
             img_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
         )
+        ground_resized = tf.image.resize_images(
+            ground_decoded, [self.config.data_loader.image_size, self.config.data_loader.image_size]
+        )
         image_normalized = tf.image.per_image_standardization(image_resized)
+        ground_normalized = tf.image.per_image_standardization(ground_resized)
         image_random_flip_lr = tf.image.random_flip_left_right(
             image_normalized,
+            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
+        )
+        ground_random_flip_lr = tf.image.random_flip_left_right(
+            ground_normalized,
             seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
         )
         # Random image flip up-down
@@ -134,5 +144,9 @@ class DataGenerator:
             image_random_flip_lr,
             seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
         )
+        ground_random_flip_ud = tf.image.random_flip_up_down(
+            ground_random_flip_lr,
+            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
+        )
 
-        return image_random_flip_ud, tag
+        return image_random_flip_ud, tag, ground_random_flip_ud

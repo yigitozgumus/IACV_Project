@@ -16,6 +16,9 @@ class AutoencoderDenoiser(BaseModel):
         self.image_input = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
+        self.ground_truth = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="gt"
+        )
 
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
 
@@ -107,6 +110,7 @@ class AutoencoderDenoiser(BaseModel):
         with tf.variable_scope("Autoencoder_Denoiser"):
             self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input,getter=get_getter(self.auto_ema))
             self.output_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
+            self.residual = self.input_image - self.mask_ema
 
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):
@@ -126,6 +130,14 @@ class AutoencoderDenoiser(BaseModel):
                 delta_pipe = self.output_ema - self.image_input
                 delta_pipe = tf.layers.Flatten()(delta_pipe)
                 self.pipe_score_2 = tf.norm(delta_pipe, ord=2,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_1"):
+                delta_mask = (self.input_image - self.mask_ema) 
+                delta_mask = tf.layers.Flatten()(delta_mask)
+                self.mask_score_1 = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_2"):
+                delta_mask_2 = (self.input_image - self.mask_ema) 
+                delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
+                self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
             
 
         # Summary
@@ -141,8 +153,16 @@ class AutoencoderDenoiser(BaseModel):
                 tf.summary.image("Output_Image", self.output, 1, ["image_2"])
                 tf.summary.image("Input_Image", self.image_input, 1, ["image_2"])
 
+                tf.summary.image("mask", self.mask, 1, ["image_3"])
+                tf.summary.image("Output_Image", self.output, 1, ["image_3"])
+                tf.summary.image("Rec_Image", self.rec_image, 1, ["image_3"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image_3"])
+                tf.summary.image("Residual", self.residual,1,["image_3"])
+                tf.summary.image("Ground_Truth", self.ground_truth,1,["image_3"])
+
         self.summary_op_ae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
+        self.summary_op_test = tf.summary.merge_all("image_3")
         self.summary_op_loss_ae = tf.summary.merge_all("loss_ae")
         self.summary_op_loss_den = tf.summary.merge_all("loss_den")
         self.summary_all_ae = tf.summary.merge([self.summary_op_ae, self.summary_op_loss_ae])

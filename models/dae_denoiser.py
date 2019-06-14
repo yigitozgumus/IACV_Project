@@ -16,6 +16,9 @@ class DAEDenoiser(BaseModel):
         self.image_input = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
+        self.ground_truth = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="gt"
+        )
         self.noise_tensor = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="noise"
         )
@@ -108,6 +111,7 @@ class DAEDenoiser(BaseModel):
         with tf.variable_scope("DAE_Denoiser"):
             self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input ,getter=get_getter(self.auto_ema))
             self.output_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
+            self.residual = self.input_image - self.mask_ema
 
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):
@@ -149,9 +153,16 @@ class DAEDenoiser(BaseModel):
                 tf.summary.image("Output_Image", self.output, 1, ["image_2"])
                 tf.summary.image("Rec_Image", self.rec_image, 1, ["image_2"])
                 tf.summary.image("Input_Image", self.image_input, 1, ["image_2"])
+                tf.summary.image("mask", self.mask, 1, ["image_3"])
+                tf.summary.image("Output_Image", self.output, 1, ["image_3"])
+                tf.summary.image("Rec_Image", self.rec_image, 1, ["image_3"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image_3"])
+                tf.summary.image("Residual", self.residual,1,["image_3"])
+                tf.summary.image("Ground_Truth", self.ground_truth,1,["image_3"])
 
         self.summary_op_ae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
+        self.summary_op_test = tf.summary.merge_all("image_3")
         self.summary_op_loss_ae = tf.summary.merge_all("loss_ae")
         self.summary_op_loss_den = tf.summary.merge_all("loss_den")
         self.summary_all_ae = tf.summary.merge([self.summary_op_ae, self.summary_op_loss_ae])
