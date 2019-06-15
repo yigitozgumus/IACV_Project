@@ -220,12 +220,12 @@ class CVAEDenoiser(BaseModel):
                     kernel_initializer=self.init_kernel,
                     name="conv",
                 )(x_e)
-                # x_e = tf.layers.batch_normalization(
-                #     x_e,
-                #     momentum=self.config.trainer.batch_momentum,
-                #     epsilon=self.config.trainer.batch_epsilon,
-                #     training=self.is_training_ae,
-                # )
+                x_e = tf.layers.batch_normalization(
+                    x_e,
+                    momentum=self.config.trainer.batch_momentum,
+                    epsilon=self.config.trainer.batch_epsilon,
+                    training=self.is_training_ae,
+                )
                 x_e = tf.nn.leaky_relu(
                     features=x_e, alpha=self.config.trainer.leakyReLU_alpha, name="leaky_relu"
                 )
@@ -240,12 +240,12 @@ class CVAEDenoiser(BaseModel):
                     kernel_initializer=self.init_kernel,
                     name="conv",
                 )(x_e)
-                # x_e = tf.layers.batch_normalization(
-                #     x_e,
-                #     momentum=self.config.trainer.batch_momentum,
-                #     epsilon=self.config.trainer.batch_epsilon,
-                #     training=self.is_training_ae,
-                # )
+                x_e = tf.layers.batch_normalization(
+                    x_e,
+                    momentum=self.config.trainer.batch_momentum,
+                    epsilon=self.config.trainer.batch_epsilon,
+                    training=self.is_training_ae,
+                )
                 x_e = tf.nn.leaky_relu(
                     features=x_e, alpha=self.config.trainer.leakyReLU_alpha, name="leaky_relu"
                 )
