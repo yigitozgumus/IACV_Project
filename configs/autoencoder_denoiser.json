@@ -26,7 +26,7 @@
         "mode":"anomaly"
     },
     "trainer": {
-        "name": "autoencoder_denoiser_trainer_kmeans_delta.AutoencoderDenoiserTrainer",
+        "name": "autoencoder_denoiser_trainer_kmeans_delta_masked.AutoencoderDenoiserTrainer",
         "noise_dim": 100,
         "image_dims": [28, 28, 1],
         "include_noise": true,

@@ -132,33 +132,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         file_writer = tf.summary.FileWriter(os.path.join(self.config.log.summary_dir, "test"))
 
 
-        # ae_train = []
-        # trainreconloop = tqdm(range(self.config.data_loader.num_iter_per_epoch))
-        # for _ in trainreconloop:
-
-        #     train_batch = self.sess.run(self.data.image)
-        #     trainreconloop.refresh()  # to show immediately the update
-        #     sleep(0.01)
-
-        #     feed_dict = {self.model.image_input:train_batch,self.model.is_training_ae: False}
-        #     ae_train_batch = self.sess.run(self.model.rec_image_ema,feed_dict=feed_dict).tolist()
-        #     ae_train+=ae_train_batch
-
-        # ae_train = np.reshape(np.array(ae_train),[len(ae_train),self.config.data_loader.image_size**2])
-        # np.save('ae_train',ae_train)
-        ae_train = np.load('ae_train.npy')
-
-        pca = PCA(n_components = 500)
-        km = KMeans(1000)
-        pipeline = Pipeline([
-        #('pca',pca),
-        ('cluster', km)
-        ])
-
-        pipeline.fit(ae_train)
-        from sklearn.externals import joblib
-        joblib.dump(pipeline, 'pipeline_k1000_ae_novalid.pkl')
-        train_codebook = pipeline.steps[0][1].cluster_centers_
+                
 
         # Create the scores
         test_loop = tqdm(range(self.config.data_loader.num_iter_per_test))
@@ -173,16 +147,22 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             scores_rec += self.sess.run(self.model.rec_score, feed_dict=feed_dict).tolist()
             scores_den += self.sess.run(self.model.den_score, feed_dict=feed_dict).tolist()
             scores_pipe += self.sess.run(self.model.pipe_score, feed_dict=feed_dict).tolist()
-            pipe_ae_batch = self.sess.run(self.model.rec_image_ema, feed_dict=feed_dict).tolist()
+            
+            # output_ema = self.sess.run(self.model.output_ema, feed_dict=feed_dict).tolist()
+            # pipe_delta_batch = self.sess.run(self.model.pipe_delta, feed_dict=feed_dict).tolist()            
+            # for im_i in range(self.model.config.data_loader.batch_size):
+            #     if(test_labels[im_i] == True):
+            #         deltaim = np.reshape(pipe_delta_batch[im_i],[28,28])
+            #         testim = np.reshape(test_batch[im_i],[28,28])
+            #         output_im = np.reshape(output_ema[im_i],[28,28])
+                   
+            #         figureim = np.reshape(np.concatenate([deltaim,testim,deltaim>0,output_im]),[1,112,28,1])
+            #         file_writer.add_summary(self.sess.run(tf.summary.image("delta", figureim)))
+     
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
-            pipe_ae_batch = np.asarray(pipe_ae_batch)
-            pipe_ae_batch = np.reshape(pipe_ae_batch,[self.config.data_loader.test_batch,self.config.data_loader.image_size**2])
-
-            # test_batch = pipe.step[0,1].transform(test_batch)
-            pred_labels_temp ,scores_km_temp= predict_anomaly(np.array(pipe_ae_batch),train_codebook,0)
             # pred_labels.append(pred_labels_temp) 
-            scores_km += (scores_km_temp.tolist())
+#             scores_km += (scores_km_temp.tolist())
          
             
         # np.save('pred_labels',pred_labels)
@@ -192,8 +172,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         scores_rec = np.asarray(scores_rec)
         scores_den = np.asarray(scores_den)
         scores_pipe = np.asarray(scores_pipe)
-        scores_km = np.asarray(scores_km)
-
+        
         step = self.sess.run(self.model.global_step_tensor)
         percentiles = np.asarray(self.config.trainer.percentiles)
         save_results(
@@ -210,20 +189,7 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
             step,
             percentile=percentiles,
         )
-        save_results(
-            self.config.log.result_dir,
-            scores_km,
-            true_labels,
-            self.config.model.name,
-            self.config.data_loader.dataset_name,
-            "scores_km_ae_novalid",
-            "paper",
-            self.config.trainer.label,
-            self.config.data_loader.random_seed,
-            self.logger,
-            step,
-            percentile=percentiles,
-        )
+     
         save_results(
             self.config.log.result_dir,
             scores_den,
