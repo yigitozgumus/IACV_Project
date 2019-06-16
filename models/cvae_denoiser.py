@@ -21,6 +21,9 @@ class CVAEDenoiser(BaseModel):
         self.ground_truth = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="gt"
         )
+        self.noise_tensor = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="noise"
+        )
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
         self.batch_size = tf.placeholder(tf.int32)
         ## Architecture
@@ -33,7 +36,7 @@ class CVAEDenoiser(BaseModel):
                 self.z_reparam = self.reparameterize(self.mean, self.logvar, self.batch_size)
                 self.rec_image = self.decoder(self.z_reparam, apply_sigmoid=True)
             with tf.variable_scope("Denoiser"):
-                self.denoised, self.mask = self.denoiser(self.rec_image)
+                self.denoised, self.mask = self.denoiser(self.rec_image  + self.noise_tensor)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):

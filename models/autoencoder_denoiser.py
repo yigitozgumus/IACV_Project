@@ -19,6 +19,9 @@ class AutoencoderDenoiser(BaseModel):
         self.ground_truth = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="gt"
         )
+        self.noise_tensor = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="noise"
+        )
 
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
 
@@ -29,7 +32,7 @@ class AutoencoderDenoiser(BaseModel):
 
         with tf.variable_scope("Autoencoder_Denoiser"):
             self.noise_gen, self.rec_image = self.autoencoder(self.image_input)
-            self.output, self.mask = self.denoiser(self.rec_image)
+            self.output, self.mask = self.denoiser(self.rec_image  + self.noise_tensor)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):
