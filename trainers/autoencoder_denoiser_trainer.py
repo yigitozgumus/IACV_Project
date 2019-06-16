@@ -75,8 +75,9 @@ class AutoencoderDenoiserTrainer(BaseTrainMulti):
         self.summarizer.add_tensorboard(step=cur_epoch, summaries=summaries, summarizer="train_den")
         # Check for reconstruction
         if cur_epoch % self.config.log.frequency_test == 0:
+            noise = np.zeros_like(image_eval)
             image_eval = self.sess.run(image)
-            feed_dict = {self.model.image_input: image_eval, self.model.is_training_ae: False}
+            feed_dict = {self.model.image_input: image_eval,self.model.noise_tensor: noise, self.model.is_training_ae: False}
             reconstruction = self.sess.run(self.model.summary_op_den, feed_dict=feed_dict)
             self.summarizer.add_tensorboard(step=cur_epoch, summaries=[reconstruction], summarizer="train_den")
         den_m = np.mean(den_losses)
