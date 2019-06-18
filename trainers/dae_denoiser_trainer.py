@@ -131,6 +131,8 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         scores_pipe_2 = []
         scores_mask1 = []
         scores_mask2 = []
+        scores_mask1_s = []
+        scores_mask2_s = []
         summaries = []
         inference_time = []
         true_labels = []
@@ -155,6 +157,8 @@ class DAEDenoiserTrainer(BaseTrainMulti):
             scores_pipe_2 += self.sess.run(self.model.pipe_score_2, feed_dict=feed_dict).tolist()
             scores_mask1 += self.sess.run(self.model.mask_score_1, feed_dict=feed_dict).tolist()
             scores_mask2 += self.sess.run(self.model.mask_score_2, feed_dict=feed_dict).tolist()
+            scores_mask1_s += self.sess.run(self.model.mask_score_1_s, feed_dict=feed_dict).tolist()
+            scores_mask2_s += self.sess.run(self.model.mask_score_2_s, feed_dict=feed_dict).tolist()
             summaries += self.sess.run([self.model.summary_op_test], feed_dict=feed_dict)
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
@@ -168,6 +172,8 @@ class DAEDenoiserTrainer(BaseTrainMulti):
         scores_pipe_2 = np.asarray(scores_pipe_2)
         scores_mask1 = np.asarray(scores_mask1)
         scores_mask2 = np.asarray(scores_mask2)
+        scores_mask1_s = np.asarray(scores_mask1_s)
+        scores_mask2_s = np.asarray(scores_mask2_s)
         # scores_scaled = (scores - min(scores)) / (max(scores) - min(scores))
         step = self.sess.run(self.model.global_step_tensor)
         percentiles = np.asarray(self.config.trainer.percentiles)
@@ -248,6 +254,34 @@ class DAEDenoiserTrainer(BaseTrainMulti):
             self.config.model.name,
             self.config.data_loader.dataset_name,
             "mask_2",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_mask1_s,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "mask_1_s",
+            "paper",
+            self.config.trainer.label,
+            self.config.data_loader.random_seed,
+            self.logger,
+            step,
+            percentile=percentiles,
+        )
+        save_results(
+            self.config.log.result_dir,
+            scores_mask2_s,
+            true_labels,
+            self.config.model.name,
+            self.config.data_loader.dataset_name,
+            "mask_2_s",
             "paper",
             self.config.trainer.label,
             self.config.data_loader.random_seed,

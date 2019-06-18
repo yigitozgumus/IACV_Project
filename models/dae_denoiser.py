@@ -31,7 +31,7 @@ class DAEDenoiser(BaseModel):
         self.logger.info("Building Training Graph")
         with tf.variable_scope("DAE_Denoiser"):
             self.noise_gen, self.rec_image = self.autoencoder(self.image_input)
-            self.output, self.mask = self.denoiser(self.rec_image + self.noise_tensor)
+            self.output, self.mask, self.mask_shallow = self.denoiser(self.rec_image + self.noise_tensor)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):
@@ -110,7 +110,7 @@ class DAEDenoiser(BaseModel):
         self.logger.info("Building Testing Graph...")
         with tf.variable_scope("DAE_Denoiser"):
             self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input ,getter=get_getter(self.auto_ema))
-            self.output_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
+            self.output_ema, self.mask_ema, self.mask_shallow_ema= self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
             self.residual = self.image_input - self.mask_ema
 
         with tf.name_scope("Testing"):
@@ -139,6 +139,14 @@ class DAEDenoiser(BaseModel):
                 delta_mask_2 = (self.image_input - self.mask_ema) 
                 delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
                 self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_1_s"):
+                delta_mask = (self.rec_image_ema - self.mask_shallow_ema) 
+                delta_mask = tf.layers.Flatten()(delta_mask)
+                self.mask_score_1_s = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_2_s"):
+                delta_mask_2 = (self.image_input - self.mask_shallow_ema) 
+                delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
+                self.mask_score_2_s = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
 
         # Summary
         with tf.name_scope("Summary"):
@@ -155,6 +163,7 @@ class DAEDenoiser(BaseModel):
                 tf.summary.image("Input_Image", self.image_input, 1, ["image_2"])
 
                 tf.summary.image("mask", self.mask_ema, 1, ["image_3"])
+                tf.summary.image("mask_shallow", self.mask_shallow_ema, 1, ["image_3"])
                 tf.summary.image("Output_Image", self.output_ema, 1, ["image_3"])
                 tf.summary.image("Rec_Image", self.rec_image_ema, 1, ["image_3"])
                 tf.summary.image("Input_Image", self.image_input, 1, ["image_3"])
@@ -377,7 +386,27 @@ class DAEDenoiser(BaseModel):
             # First convolution from the image second one from the first top layer convolution
             mask = net_input + net_layer_1
 
-            for i in range(19):
+            for i in range(4):
+                # Top layer chained convolutions
+                net = tf.layers.Conv2D(
+                    filters=63,
+                    kernel_size=3,
+                    strides=1,
+                    kernel_initializer=self.init_kernel,
+                    padding="same",
+                )(net)
+                net = tf.nn.relu(features=net)
+                # Bottom layer single convolutions
+                net_1 = tf.layers.Conv2D(
+                    filters=1,
+                    kernel_size=3,
+                    strides=1,
+                    kernel_initializer=self.init_kernel,
+                    padding="same",
+                )(net)
+                mask += net_1
+            mask_shallow = mask
+            for i in range(15):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,
@@ -398,7 +427,7 @@ class DAEDenoiser(BaseModel):
                 mask += net_1
             output = image_input + mask
 
-        return output, mask
+        return output, mask, mask_shallow
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
