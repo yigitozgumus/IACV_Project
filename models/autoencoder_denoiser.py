@@ -412,7 +412,7 @@ class AutoencoderDenoiser(BaseModel):
                 )(net)
                 mask += net_1
             mask_shallow = mask
-            for i in range(15):
+            for i in range(5):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,
