@@ -165,7 +165,7 @@ class CVAEDenoiserTrainer(BaseTrainMulti):
             scores_noise += self.sess.run(self.model.noise_score, feed_dict=feed_dict).tolist()
             scores_mask1 += self.sess.run(self.model.mask_score_1, feed_dict=feed_dict).tolist()
             scores_mask2 += self.sess.run(self.model.mask_score_2, feed_dict=feed_dict).tolist()
-            summaries+= self.sess.run([self.model.summary_op_test],feed_dict=feed_dict).tolist()
+            summaries+= self.sess.run([self.model.summary_op_test],feed_dict=feed_dict)
             inference_time.append(time() - test_batch_begin)
             true_labels += test_labels.tolist()
         true_labels = np.asarray(true_labels)
