@@ -14,7 +14,7 @@ conda create --name myenv --file spec-file.txt
 * To run the model:
 
 ```bash
-python3 run.py -c ./configs/\<CONFIGFILE\> -e \<EXPERIMENTNAME\>
+python3 train.py -c ./configs/\<CONFIGFILE\> -e \<EXPERIMENTNAME\>
 ```
 
 * You can also use the same experiment name and configuration file to continue unfinished experiment.
