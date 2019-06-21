@@ -1,6 +1,9 @@
 # IACV Project
 Anomaly Detection Framework using Autoencoder and Denoising Network
 
+Authors: [Şemsi Yiğit Özgümüş](https://github.com/yigitozgumus), [Yiğit Yusuf Pilavcı](https://github.com/Y2P)
+
+
 ## Instructions
 - If you don't have the data folder, in the first run model will download and create the dataset.
 - All the experiment configurations and model parameters can be changed from the related config files.
