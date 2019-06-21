@@ -4,9 +4,9 @@
         "name": "autoencoder_denoiser.AutoencoderDenoiser"
     },
     "dirs": {
-        "data": "data",
-        "data_normal": "data/Normal/",
-        "data_anomalous": "data/Anomalous/"
+        "data": "data_nooverlap",
+        "data_normal": "data_nooverlap/Normal/",
+        "data_anomalous": "data_nooverlap/Anomalous/"
     },
     "data_loader": {
         "name": "data_generator.DataGenerator",

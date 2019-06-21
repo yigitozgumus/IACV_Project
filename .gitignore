@@ -110,7 +110,19 @@ venv.bak/
 # data
 data/
 data/*
+data_nooverlap/
+data_nooverlap/*
+valid_recon.npy
+aetrain.npy
+delta_train.npy
 
 # Experiments
 Experiments/
 Experiments/*
+pipeline.pkl
+pipeline_k1000_pca500.pkl
+pipelinecheck.ipynb
+pipeline_pca500_k1000_delta_novalid.pkl
+delta_train.npy
+pipeline_k1000_delta_novalid.pkl
+

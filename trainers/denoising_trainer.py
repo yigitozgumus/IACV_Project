@@ -27,12 +27,13 @@ class DenoisingTrainer(BaseTrain):
         summaries = []
         # Get the current epoch counter
         cur_epoch = self.model.cur_epoch_tensor.eval(self.sess)
-        image = self.data.image
+        image = self.data.test_image
+        label = self.data.test_label
         for _ in loop:
             loop.set_description("Epoch:{}".format(cur_epoch + 1))
             loop.refresh()  # to show immediately the update
             sleep(0.01)
-            ls, sum_a, = self.train_step(image, cur_epoch)
+            ls, sum_a, = self.train_step(image,label, cur_epoch)
             losses.append(ls)
             summaries.append(sum_a)
         self.logger.info("Epoch {} terminated".format(cur_epoch))
@@ -46,14 +47,15 @@ class DenoisingTrainer(BaseTrain):
         self.model.save(self.sess)
         # Testing
 
-    def train_step(self, image, cur_epoch):
+    def train_step(self, image,label, cur_epoch):
         """
        implement the logic of the train step
        - run the tensorflow session
        - return any metrics you need to summarize
        """
         image_eval = self.sess.run(image)
-        feed_dict = {self.model.image_input: image_eval}
+        label_eval = self.sess.run(label)
+        feed_dict = {self.model.image_input: image_eval,self.model.label:label_eval}
         loss, sum_a = self.sess.run([self.model.loss, self.model.summary_all], feed_dict=feed_dict)
 
         return loss, sum_a

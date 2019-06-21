@@ -21,7 +21,9 @@ class DataGenerator:
         self.filenames_train = d.get_train_dataset()
         # assert len(self.filenames) == len(self.labels)
         # Create the Dataset using Tensorflow Data API
-        self.dataset = tf.data.Dataset.from_tensor_slices(self.filenames_train)
+        self.dataset = tf.data.Dataset.from_tensor_slices(
+            (self.filenames_train)
+        )
         # Apply parse function to get the numpy array of the images
         self.dataset = self.dataset.map(
             map_func=self._parse_function,

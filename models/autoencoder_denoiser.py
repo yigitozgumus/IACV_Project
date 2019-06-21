@@ -128,6 +128,8 @@ class AutoencoderDenoiser(BaseModel):
             with tf.variable_scope("Pipeline_Loss_1"):
                 delta_pipe = self.output_ema - self.image_input
                 delta_pipe = tf.layers.Flatten()(delta_pipe)
+                delta_pipe = tf.multiply(delta_pipe, tf.cast(delta_pipe>0, delta_pipe.dtype))
+                self.pipe_delta = delta_pipe
                 self.pipe_score = tf.norm(delta_pipe, ord=1,axis=1,keepdims=False)
             with tf.variable_scope("Pipeline_Loss_2"):
                 delta_pipe = self.output_ema - self.image_input

@@ -1,0 +1,40 @@
+{
+    "exp":{},
+    "model": {
+        "name": "solo_denoising.Denoising"
+    },
+    "dirs": {
+        "data": "data",
+        "data_normal": "data/Normal/",
+        "data_anomalous": "data/Anomalous/"
+    },
+    "data_loader": {
+        "name": "data_generator.DataGenerator",
+        "random_seed" :42,
+        "buffer_size": 51200,
+        "image_size": 32,
+        "batch_size": 32,
+        "num_epochs": 1000,
+        "num_iter_per_epoch": 1600,
+        "num_parallel_calls": 8,
+        "test_batch": 32,
+        "validation": false,
+        "mode":"anomaly"
+    },
+    "trainer": {
+        "name": "denoising_trainer.DenoisingTrainer",
+        "noise_dim": 100,
+        "image_dims": [32, 32, 1],
+        "include_noise": true,
+        "l_rate": 1e-4,
+        "optimizer_adam_beta1": 0.5,
+        "optimizer_adam_beta2": 0.999
+    },
+    "log": {
+        "name": "summarizer.Summarizer",
+        "enable_summary": true,
+        "max_to_keep": 2,
+        "num_example_imgs_to_generate": 25,
+        "output_folder": "Experiments"
+    }
+}
