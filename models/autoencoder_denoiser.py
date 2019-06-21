@@ -16,6 +16,12 @@ class AutoencoderDenoiser(BaseModel):
         self.image_input = tf.placeholder(
             tf.float32, shape=[None] + self.config.trainer.image_dims, name="x"
         )
+        self.ground_truth = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="gt"
+        )
+        self.noise_tensor = tf.placeholder(
+            tf.float32, shape=[None] + self.config.trainer.image_dims, name="noise"
+        )
 
         self.init_kernel = tf.random_normal_initializer(mean=0.0, stddev=0.02)
 
@@ -23,9 +29,10 @@ class AutoencoderDenoiser(BaseModel):
 
         # Encoder Decoder Part first
         self.logger.info("Building Training Graph")
+
         with tf.variable_scope("Autoencoder_Denoiser"):
             self.noise_gen, self.rec_image = self.autoencoder(self.image_input)
-            self.output, self.mask = self.denoiser(self.rec_image)
+            self.output, self.mask, self.mask_shallow = self.denoiser(self.rec_image  + self.noise_tensor)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):
@@ -42,7 +49,8 @@ class AutoencoderDenoiser(BaseModel):
                     )
                 )
             with tf.name_scope("Denoiser"):
-                delta_den = self.output - self.rec_image
+                # This part was normally the rec_image which was input but trying sth new.
+                delta_den = self.output - self.image_input
                 delta_den = tf.layers.Flatten()(delta_den)
                 self.den_loss = tf.reduce_mean(
                     tf.norm(
@@ -104,7 +112,8 @@ class AutoencoderDenoiser(BaseModel):
         self.logger.info("Building Testing Graph...")
         with tf.variable_scope("Autoencoder_Denoiser"):
             self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input,getter=get_getter(self.auto_ema))
-            self.output_ema, self.mask_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
+            self.output_ema, self.mask_ema, self.mask_shallow_ema = self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
+            self.residual = self.image_input - self.mask_ema
 
         with tf.name_scope("Testing"):
             with tf.variable_scope("Reconstruction_Loss"):
@@ -116,12 +125,33 @@ class AutoencoderDenoiser(BaseModel):
                 delta_den = self.output_ema - self.rec_image_ema
                 delta_den = tf.layers.Flatten()(delta_den)
                 self.den_score = tf.norm(delta_den, ord=2, axis=1,keepdims=False)
-            with tf.variable_scope("Pipeline_Loss"):
-                delta_pipe = (self.output_ema - self.image_input)
+            with tf.variable_scope("Pipeline_Loss_1"):
+                delta_pipe = self.output_ema - self.image_input
                 delta_pipe = tf.layers.Flatten()(delta_pipe)
                 delta_pipe = tf.multiply(delta_pipe, tf.cast(delta_pipe>0, delta_pipe.dtype))
                 self.pipe_delta = delta_pipe
                 self.pipe_score = tf.norm(delta_pipe, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Pipeline_Loss_2"):
+                delta_pipe = self.output_ema - self.image_input
+                delta_pipe = tf.layers.Flatten()(delta_pipe)
+                self.pipe_score_2 = tf.norm(delta_pipe, ord=2,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_1"):
+                delta_mask = (self.rec_image_ema - self.mask_ema) 
+                delta_mask = tf.layers.Flatten()(delta_mask)
+                self.mask_score_1 = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_2"):
+                delta_mask_2 = (self.image_input - self.mask_ema) 
+                delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
+                self.mask_score_2 = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_1_s"):
+                delta_mask = (self.rec_image_ema - self.mask_shallow_ema) 
+                delta_mask = tf.layers.Flatten()(delta_mask)
+                self.mask_score_1_s = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
+            with tf.variable_scope("Mask_2_s"):
+                delta_mask_2 = (self.image_input - self.mask_shallow_ema) 
+                delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
+                self.mask_score_2_s = tf.norm(delta_mask_2, ord=2,axis=1,keepdims=False)
+            
 
         # Summary
         with tf.name_scope("Summary"):
@@ -130,13 +160,23 @@ class AutoencoderDenoiser(BaseModel):
             with tf.name_scope("denoiser_loss"):
                 tf.summary.scalar("loss_den", self.den_loss, ["loss_den"])
             with tf.name_scope("Image"):
-                tf.summary.image("Input_Image", self.image_input, 3, ["image"])
-                tf.summary.image("rec_image",self.rec_image,3, ["image"])
-                tf.summary.image("rec_image", self.rec_image, 3, ["image_2"])
-                tf.summary.image("Output_Image", self.output, 3, ["image_2"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image"])
+                tf.summary.image("rec_image",self.rec_image,1, ["image"])
+                tf.summary.image("rec_image", self.rec_image, 1, ["image_2"])
+                tf.summary.image("Output_Image", self.output, 1, ["image_2"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image_2"])
+
+                tf.summary.image("mask", self.mask_ema, 1, ["image_3"])
+                tf.summary.image("mask_shallow", self.mask_shallow_ema, 1, ["image_3"])
+                tf.summary.image("Output_Image", self.output_ema, 1, ["image_3"])
+                tf.summary.image("Rec_Image", self.rec_image_ema, 1, ["image_3"])
+                tf.summary.image("Input_Image", self.image_input, 1, ["image_3"])
+                tf.summary.image("Residual", self.residual,1,["image_3"])
+                tf.summary.image("Ground_Truth", self.ground_truth,1,["image_3"])
 
         self.summary_op_ae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
+        self.summary_op_test = tf.summary.merge_all("image_3")
         self.summary_op_loss_ae = tf.summary.merge_all("loss_ae")
         self.summary_op_loss_den = tf.summary.merge_all("loss_den")
         self.summary_all_ae = tf.summary.merge([self.summary_op_ae, self.summary_op_loss_ae])
@@ -258,7 +298,7 @@ class AutoencoderDenoiser(BaseModel):
                         filters=256,
                         kernel_size=5,
                         strides=(2, 2),
-                        padding="valid",
+                        padding="same",
                         kernel_initializer=self.init_kernel,
                         name="tconv2",
                     )(net)
@@ -313,7 +353,7 @@ class AutoencoderDenoiser(BaseModel):
                     net = tf.layers.Conv2DTranspose(
                         filters=1,
                         kernel_size=5,
-                        strides=(1, 1),
+                        strides=(2, 2),
                         padding="same",
                         kernel_initializer=self.init_kernel,
                         name="tconv5",
@@ -354,7 +394,27 @@ class AutoencoderDenoiser(BaseModel):
             # First convolution from the image second one from the first top layer convolution
             mask = net_input + net_layer_1
 
-            for i in range(19):
+            for i in range(4):
+                # Top layer chained convolutions
+                net = tf.layers.Conv2D(
+                    filters=63,
+                    kernel_size=3,
+                    strides=1,
+                    kernel_initializer=self.init_kernel,
+                    padding="same",
+                )(net)
+                net = tf.nn.relu(features=net)
+                # Bottom layer single convolutions
+                net_1 = tf.layers.Conv2D(
+                    filters=1,
+                    kernel_size=3,
+                    strides=1,
+                    kernel_initializer=self.init_kernel,
+                    padding="same",
+                )(net)
+                mask += net_1
+            mask_shallow = mask
+            for i in range(5):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,
@@ -375,7 +435,7 @@ class AutoencoderDenoiser(BaseModel):
                 mask += net_1
             output = image_input + mask
 
-        return output, mask
+        return output, mask, mask_shallow
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.

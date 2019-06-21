@@ -7,7 +7,7 @@ from PIL import Image
 from tqdm import tqdm
 
 from utils.utils import working_directory
-from utils.download_data import download_data
+#from utils.download_data import download_data_material
 from utils.dirs import listdir_nohidden
 from utils.logger import Logger
 from shutil import rmtree
@@ -20,17 +20,29 @@ class DataLoader:
             data_dir: this folder path should contain both Anomalous and Normal images
         """
         self.config = config
-
+        self.image_size = self.config.data_loader.image_size
         log_object = Logger(self.config)
         self.logger = log_object.get_logger(__name__)
+        dataset_type = self.config.data_loader.dataset_name
+        if dataset_type == "material":
+            self.build_material_dataset()
+        elif dataset_type == "cifar10":
+            self.build_cifar10_dataset()
+        elif dataset_type == "mnist":
+            self.build_mnist_dataset()
+
+    def build_material_dataset(self):
         self.data_dir = self.config.dirs.data
-        self.train_dataset = os.path.join(self.data_dir, "train")
-        self.valid_dataset = os.path.join(self.data_dir, "valid")
-        self.img_location = os.path.join(self.data_dir, "test", "imgs/")
-        self.tag_location = os.path.join(self.data_dir, "test", "labels/")
+        self.train = "train_{}".format(self.image_size)
+        self.test = "test_{}".format(self.image_size)
+        self.valid = "valid_{}".format(self.image_size)
+        self.train_dataset = os.path.join(self.data_dir, self.train)
+        self.valid_dataset = os.path.join(self.data_dir, self.valid)
+        self.img_location = os.path.join(self.data_dir, self.test, "imgs/")
+        self.tag_location = os.path.join(self.data_dir, self.test, "labels/")
         if not os.path.exists(self.data_dir):
             self.logger.info("Dataset is not present. Download is started.")
-            download_data(self.data_dir)
+            download_data_material(self.data_dir)
         self.data_dir_normal = self.config.dirs.data_normal
         self.data_dir_anomalous = self.config.dirs.data_anomalous
         # Up until this part only the raw dataset existence is checked and downloaded if not
@@ -53,15 +65,21 @@ class DataLoader:
         self.anorm_tag_array = self.create_image_array(anorm_tag_names, save=False)
         self.image_tag_list = list(zip(self.anorm_img_array, self.anorm_tag_array))
         if not self.config.data_loader.validation:
-            self.populate_train()
+            self.populate_train_material()
         else:
-            self.populate_train_valid()
+            self.populate_train_valid_material()
         if self.config.data_loader.mode == "anomaly":
-            self.populate_test()
+            self.populate_test_material()
 
-    def populate_train(self):
+    def build_cifar10_dataset(self):
+        pass
+
+    def build_mnist_dataset(self):
+        pass
+
+    def populate_train_material(self):
         # Check if we have the data already
-        if "train" in self.dir_names:
+        if self.train in self.dir_names:
             self.logger.info("Train Dataset is already populated.")
         else:
             self.logger.info("Train Dataset will be populated")
@@ -85,8 +103,8 @@ class DataLoader:
                     im = Image.fromarray(img)
                     im.save("img_{}.jpg".format(str(idx)))
 
-    def populate_train_valid(self):
-        if "train" in self.dir_names and "valid" in self.dir_names:
+    def populate_train_valid_material(self):
+        if self.train in self.dir_names and self.valid in self.dir_names:
             self.logger.info("Train and Validation datasets are already populated")
         else:
             # Remove train dataset from the previous run
@@ -125,13 +143,13 @@ class DataLoader:
                     im = Image.fromarray(img)
                     im.save("img_{}.jpg".format(str(idx)))
 
-    def populate_test(self):
-        if "test" in self.dir_names:
+    def populate_test_material(self):
+        if self.test in self.dir_names:
             self.logger.info("Test Dataset is already populated")
         else:
             self.logger.info("Test Dataset will be populated")
             size = self.config.data_loader.image_size
-            folder_name = "test"
+            folder_name = self.test
             first_level = os.path.join(self.data_dir, folder_name)
             if not os.path.exists(first_level):
                 os.mkdir(first_level)
@@ -224,5 +242,5 @@ class DataLoader:
             im2arr = io.imread(label)
             labels.append(1) if np.sum(im2arr) > 5100 else labels.append(0)
         labels_f = tf.constant(labels)
-        print(labels_f.shape)
-        return [img_names, labels_f]
+
+        return [img_names, labels_f, tag_list_merged]
