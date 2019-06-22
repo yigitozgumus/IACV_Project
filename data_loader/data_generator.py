@@ -151,22 +151,6 @@ class DataGenerator:
         )
         image_normalized = tf.image.per_image_standardization(image_resized)
         ground_normalized = tf.image.per_image_standardization(ground_resized)
-        image_random_flip_lr = tf.image.random_flip_left_right(
-            image_normalized,
-            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
-        )
-        ground_random_flip_lr = tf.image.random_flip_left_right(
-            ground_normalized,
-            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
-        )
-        # Random image flip up-down
-        image_random_flip_ud = tf.image.random_flip_up_down(
-            image_random_flip_lr,
-            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
-        )
-        ground_random_flip_ud = tf.image.random_flip_up_down(
-            ground_random_flip_lr,
-            seed=tf.random.set_random_seed(self.config.data_loader.random_seed + 1234),
-        )
+        
 
-        return image_random_flip_ud, tag, ground_random_flip_ud
+        return image_normalized, tag, ground_normalized
