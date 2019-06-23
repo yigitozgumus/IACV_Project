@@ -162,6 +162,9 @@ class DAEDenoiser(BaseModel):
                 tf.summary.image("Rec_Image", self.rec_image, 1, ["image_2"])
                 tf.summary.image("Input_Image", self.image_input, 1, ["image_2"])
 
+                for ind,layer in enumerate(self.feature_layers):
+                    tf.summary.image("Mask_{}".format(ind),layer,1,["image_2"] )
+
                 tf.summary.image("mask", self.mask_ema, 1, ["image_3"])
                 tf.summary.image("mask_shallow", self.mask_shallow_ema, 1, ["image_3"])
                 tf.summary.image("Output_Image", self.output_ema, 1, ["image_3"])
@@ -169,6 +172,9 @@ class DAEDenoiser(BaseModel):
                 tf.summary.image("Input_Image", self.image_input, 1, ["image_3"])
                 tf.summary.image("Residual", self.residual,1,["image_3"])
                 tf.summary.image("Ground_Truth", self.ground_truth,1,["image_3"])
+
+                for ind,layer in enumerate(self.feature_layers_ema):
+                    tf.summary.image("Mask_{}".format(ind),layer,1,["image_3"] )
 
         self.summary_op_ae = tf.summary.merge_all("image")
         self.summary_op_den = tf.summary.merge_all("image_2")
