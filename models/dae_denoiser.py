@@ -31,7 +31,7 @@ class DAEDenoiser(BaseModel):
         self.logger.info("Building Training Graph")
         with tf.variable_scope("DAE_Denoiser"):
             self.noise_gen, self.rec_image = self.autoencoder(self.image_input)
-            self.output, self.mask, self.mask_shallow = self.denoiser(self.rec_image + self.noise_tensor)
+            self.output, self.mask, self.mask_shallow, self.feature_layers = self.denoiser(self.rec_image + self.noise_tensor)
 
         # Loss Function
         with tf.name_scope("Loss_Function"):
@@ -110,7 +110,7 @@ class DAEDenoiser(BaseModel):
         self.logger.info("Building Testing Graph...")
         with tf.variable_scope("DAE_Denoiser"):
             self.noise_gen_ema, self.rec_image_ema = self.autoencoder(self.image_input ,getter=get_getter(self.auto_ema))
-            self.output_ema, self.mask_ema, self.mask_shallow_ema= self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
+            self.output_ema, self.mask_ema, self.mask_shallow_ema, self.feature_layers_ema= self.denoiser(self.rec_image_ema,getter=get_getter(self.den_ema))
             self.residual = self.image_input - self.mask_ema
 
         with tf.name_scope("Testing"):
@@ -357,6 +357,7 @@ class DAEDenoiser(BaseModel):
             return noise_gen, image_rec
 
     def denoiser(self, image_input, getter=None):
+        feature_layers = []
         # Full Model Scope
         with tf.variable_scope("Denoiser", reuse=tf.AUTO_REUSE, custom_getter=getter):
             # First Convolution + ReLU layer
@@ -385,7 +386,7 @@ class DAEDenoiser(BaseModel):
             )(net)
             # First convolution from the image second one from the first top layer convolution
             mask = net_input + net_layer_1
-
+            feature_layers.append(mask)
             for i in range(4):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
@@ -405,6 +406,7 @@ class DAEDenoiser(BaseModel):
                     padding="same",
                 )(net)
                 mask += net_1
+                feature_layers.append(mask)
             mask_shallow = mask
             for i in range(5):
                 # Top layer chained convolutions
@@ -427,7 +429,7 @@ class DAEDenoiser(BaseModel):
                 mask += net_1
             output = image_input + mask
 
-        return output, mask, mask_shallow
+        return output, mask, mask_shallow, feature_layers
 
     def init_saver(self):
         # here you initialize the tensorflow saver that will be used in saving the checkpoints.
