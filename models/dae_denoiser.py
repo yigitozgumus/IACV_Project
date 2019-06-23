@@ -414,7 +414,7 @@ class DAEDenoiser(BaseModel):
                 mask += net_1
                 feature_layers.append(mask)
             mask_shallow = mask
-            for i in range(5):
+            for i in range(15):
                 # Top layer chained convolutions
                 net = tf.layers.Conv2D(
                     filters=63,
@@ -433,6 +433,7 @@ class DAEDenoiser(BaseModel):
                     padding="same",
                 )(net)
                 mask += net_1
+                feature_layers.append(mask)
             output = image_input + mask
 
         return output, mask, mask_shallow, feature_layers
