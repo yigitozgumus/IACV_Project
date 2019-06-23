@@ -134,7 +134,7 @@ class DAEDenoiser(BaseModel):
             with tf.variable_scope("Mask_1"):
                 delta_mask = (self.rec_image_ema - self.mask_ema) 
                 delta_mask = tf.layers.Flatten()(delta_mask)
-                self.mask_score_1 = tf.norm(delta_mask, ord=1,axis=1,keepdims=False)
+                self.mask_score_1 = tf.norm(delta_mask, ord=2,axis=1,keepdims=False)
             with tf.variable_scope("Mask_2"):
                 delta_mask_2 = (self.image_input - self.mask_ema) 
                 delta_mask_2 = tf.layers.Flatten()(delta_mask_2)
